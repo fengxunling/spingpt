@@ -1,7 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.dirname(__file__)+'/src/')
-print(os.path.dirname(__file__)+'/../')
+sys.path.append(os.path.dirname(__file__)+'/napari-nifti/src/')
+print(os.path.dirname(__file__)+'')
 
 import threading
 import time
@@ -14,7 +14,8 @@ import napari
 from napari import Viewer
 
 # set the parameters
-VIDEO_PATH = "operation_recording.mp4"  # video file path
+RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
+VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
@@ -24,10 +25,18 @@ class ScreenRecorder:
         self.writer = None
         self.monitor = None
         self.capture_thread = None
+        self.start_time = None
+        self.end_time = None
 
     def start_recording(self, viewer):
         # auto detect the recording region and start recording
         self.is_recording = True
+        self.start_time = datetime.now()
+
+        # write the start time to the log
+        timestamp_start = self.start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+            f.write(f"\n[Video Recording Started] {timestamp_start}\n")
         
         # get the napari window coordinates
         win = viewer.window._qt_window
@@ -70,6 +79,17 @@ class ScreenRecorder:
     def stop_recording(self):
         # stop the recording
         self.is_recording = False
+        self.end_time = datetime.now()
+
+        # write the end time to the log
+        timestamp_end = self.end_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+        duration = self.end_time - self.start_time
+        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+            f.write(
+                f"[Video Recording Ended] {timestamp_end}\n"
+                f"[Duration] {duration.total_seconds():.2f} seconds\n\n"
+            )
+
         if self.capture_thread:
             self.capture_thread.join()
         if self.writer:
@@ -132,14 +152,14 @@ def on_points_changed(event):
             log_entry = (
                 f"time: {timestamp}\n"
                 f"spatial coordinates: {physical_coord}\n"
-                f"volumes coordinates: {pt}\n"
+                # f"volumes coordinates: {pt}\n"
                 f"current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
                 "------------------------\n"
             )
             log_info.append(log_entry)
             print(log_entry.strip())
         
-        with open("3d_points_log.txt", "a") as f:
+        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
             f.writelines(log_info)
         
         previous_length = current_length
