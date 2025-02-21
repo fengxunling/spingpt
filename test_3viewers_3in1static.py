@@ -16,8 +16,6 @@ from napari import Viewer
 from PIL import Image, ImageDraw, ImageFont
 import queue
 
-print(napari.__version__)
-
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
 VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
@@ -201,6 +199,46 @@ metadata = layer_data[0][1]
 viewer = Viewer()
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
+from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
+
+# 在创建viewer后添加以下代码
+slider_container = QWidget()
+slider_layout = QVBoxLayout()
+
+# Y轴滑块
+y_slider = QSlider()
+y_slider.setOrientation(1)  # 垂直滑块
+y_slider.setMinimum(0)
+y_slider.setMaximum(image_array.shape[1]-1)
+def update_y(value):
+    current_step = list(viewer.dims.current_step)
+    current_step[1] = value
+    viewer.dims.current_step = tuple(current_step)
+y_slider.valueChanged.connect(update_y)
+
+# X轴滑块
+x_slider = QSlider()
+x_slider.setOrientation(1)  # 垂直滑块
+x_slider.setMinimum(0)
+x_slider.setMaximum(image_array.shape[2]-1)
+def update_x(value):
+    current_step = list(viewer.dims.current_step)
+    current_step[2] = value
+    viewer.dims.current_step = tuple(current_step)
+x_slider.valueChanged.connect(update_x)
+
+# 将滑块添加到界面
+slider_layout.addWidget(y_slider)
+slider_layout.addWidget(x_slider)
+slider_container.setLayout(slider_layout)
+viewer.window.add_dock_widget(slider_container, name="Axis Controls")
+
+# 同步滑块位置
+def sync_sliders(event):
+    y_slider.setValue(viewer.dims.current_step[1])
+    x_slider.setValue(viewer.dims.current_step[2])
+viewer.dims.events.current_step.connect(sync_sliders)
+
 # Get initial slice positions
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
@@ -213,120 +251,24 @@ axial_layer = viewer.add_image(axial_slice, name='Axial')
 coronal_layer = viewer.add_image(coronal_slice.T, name='Coronal')  # Transpose for correct orientation
 sagittal_layer = viewer.add_image(sagittal_slice.T, name='Sagittal')  # Transpose for correct orientation
 
-# 修改后的3D视图添加方式（替换原有相关代码）
-
-# 创建Viewer
-viewer = Viewer()
-
-# 添加主图像层（保持原有切片视图逻辑）
-image_layer = viewer.add_image(
-    image_array, 
-    **metadata,
-    visible=False,  # 保持原切片视图的隐藏状态
-    name='Raw Data'
-)
-
-# 添加独立的3D体积渲染层（新增部分）
-try:
-    # 新版本napari的volume层添加方式
-    volume_layer = viewer.add_volume(
-        image_array,
-        name='3D Volume',
-        rendering='volume',
-        colormap='gray',
-        blending='additive',
-        scale=metadata.get('scale', [1, 1, 1]),  # 确保scale参数存在
-        translate=metadata.get('translate', [0, 0, 0]),
-        visible=True
-    )
-except AttributeError:
-    # 旧版本兼容方案
-    volume_layer = viewer.add_image(
-        image_array,
-        name='3D Volume',
-        rendering='mip',  # 旧版本使用最大密度投影
-        colormap='gray',
-        blending='additive',
-        scale=metadata.get('scale', [1, 1, 1]),
-        translate=metadata.get('translate', [0, 0, 0]),
-        visible=True
-    )
-
-# 调整视图布局（确保兼容性）
+# Set grid layout
 viewer.grid.enabled = True
-viewer.grid.shape = (2, 2)  # 修改为2行2列布局
+viewer.grid.shape = (1, 3)  # 1 row, 3 columns
 
-# 重新排列视图位置
-# Add orthogonal 2D slice layers
-axial_slice = image_array[initial_z, :, :]
-coronal_slice = image_array[:, initial_y, :]
-sagittal_slice = image_array[:, :, initial_x]
-
-axial_layer = viewer.add_image(axial_slice, name='Axial')
-coronal_layer = viewer.add_image(coronal_slice.T, name='Coronal')  # Transpose for correct orientation
-sagittal_layer = viewer.add_image(sagittal_slice.T, name='Sagittal')  # Transpose for correct orientation
-
-# 添加3D视图控制面板（修改后的版本）
-from qtpy.QtWidgets import QWidget, QVBoxLayout, QPushButton, QSlider
-from qtpy.QtCore import Qt
-
-# 创建控制面板
-control_panel = QWidget()
-layout = QVBoxLayout()
-control_panel.setLayout(layout)
-
-# 渲染模式切换按钮（版本自适应）
-if hasattr(volume_layer, 'rendering'):  # 新版本功能
-    def toggle_rendering():
-        current_mode = volume_layer.rendering
-        volume_layer.rendering = 'iso' if current_mode == 'volume' else 'volume'
-    
-    render_btn = QPushButton('切换渲染模式')
-    render_btn.clicked.connect(toggle_rendering)
-    layout.addWidget(render_btn)
-
-# 不透明度控制滑块（通用功能）
-opacity_slider = QSlider(Qt.Horizontal)
-opacity_slider.setRange(0, 100)
-opacity_slider.setValue(50)
-
-def update_opacity(value):
-    if hasattr(volume_layer, 'opacity'):
-        volume_layer.opacity = value/100
-    elif hasattr(volume_layer, 'alpha'):
-        volume_layer.alpha = value/100
-
-opacity_slider.valueChanged.connect(update_opacity)
-layout.addWidget(opacity_slider)
-
-# 将控制面板添加到界面
-viewer.window.add_dock_widget(control_panel, area='left', name='3D控制')
-
-# 修改切片更新函数（保持原有逻辑，新增3D视图同步）
 def update_slices(event):
-    """更新所有视图"""
+    """Update all views when navigating through slices"""
     z, y, x = viewer.dims.current_step
+    # print(f"current z: {z}, y: {y}, x: {x}")
     
-    # 更新2D切片
+    # Update slice data
     axial_layer.data = image_array[z, :, :]
-    coronal_layer.data = image_array[:, y, :].T
-    sagittal_layer.data = image_array[:, :, x].T
+    coronal_layer.data = image_array[:, y, :].T  # Transpose coronal view
+    sagittal_layer.data = image_array[:, :, x].T  # Transpose sagittal view
     
-    # 同步3D视图视角（新版本方式）
-    if hasattr(viewer.dims, 'notified_axes'):
-        try:
-            volume_layer.view_direction = viewer.dims.notified_axes[-3:][::-1]
-        except AttributeError:
-            pass
-    
-    # 刷新显示
-    for layer in [axial_layer, coronal_layer, sagittal_layer]:
-        layer.refresh()
-
-# ... [保持后续points_layer和recording逻辑不变] ...
-
-
-
+    # Refresh displays
+    axial_layer.refresh()
+    coronal_layer.refresh()
+    sagittal_layer.refresh()
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)
@@ -422,9 +364,5 @@ def on_close(event):
     if recorder.is_recording:
         recorder.stop_recording()
 viewer.window._qt_window.closeEvent = on_close
-
-# 最后添加3D视图的初始视角设置
-viewer.dims.ndisplay = 3  # 初始以3D模式显示
-volume_layer.visible = True  # 确保3D视图可见
 
 napari.run()
