@@ -205,6 +205,17 @@ from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 slider_container = QWidget()
 slider_layout = QVBoxLayout()
 
+# Z轴滑块
+z_slider = QSlider()
+z_slider.setOrientation(1)  # 垂直滑块
+z_slider.setMinimum(0)
+z_slider.setMaximum(image_array.shape[0]-1)  # 使用第一个维度
+def update_z(value):
+    current_step = list(viewer.dims.current_step)
+    current_step[0] = value  # 修改第一个维度
+    viewer.dims.current_step = tuple(current_step)
+z_slider.valueChanged.connect(update_z)
+
 # Y轴滑块
 y_slider = QSlider()
 y_slider.setOrientation(1)  # 垂直滑块
@@ -227,7 +238,8 @@ def update_x(value):
     viewer.dims.current_step = tuple(current_step)
 x_slider.valueChanged.connect(update_x)
 
-# 将滑块添加到界面
+# 将滑块添加到界面（按Z-Y-X顺序）
+slider_layout.addWidget(z_slider)
 slider_layout.addWidget(y_slider)
 slider_layout.addWidget(x_slider)
 slider_container.setLayout(slider_layout)
@@ -235,6 +247,7 @@ viewer.window.add_dock_widget(slider_container, name="Axis Controls")
 
 # 同步滑块位置
 def sync_sliders(event):
+    z_slider.setValue(viewer.dims.current_step[0])  # 同步Z轴
     y_slider.setValue(viewer.dims.current_step[1])
     x_slider.setValue(viewer.dims.current_step[2])
 viewer.dims.events.current_step.connect(sync_sliders)
@@ -317,12 +330,6 @@ def on_points_changed(event):
         previous_length = current_length
 
 points_layer.events.data.connect(on_points_changed)
-
-# @viewer.bind_key('C')
-# def change_viwer(viewer):
-#     print("change viewer")
-#     update_slices(Viewer)
-#     viewer.dims.events.current_step.connect(update_slices)
 
 # set the recording callback
 @viewer.bind_key('R')  # press 'R' to start/stop recording
