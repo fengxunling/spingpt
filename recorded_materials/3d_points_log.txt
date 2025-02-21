@@ -50,3 +50,6 @@ current slice: [dim0:456, dim1:80, dim2:447]
 [Annotation] 2025-02-21 11:05:11.386
 Content: 123231321
 ------------------------
+[Video Recording Ended] 2025-02-21 14:25:37.512
+[Duration] 2.16 seconds
+

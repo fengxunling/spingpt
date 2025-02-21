@@ -39,6 +39,11 @@ class ScreenRecorder:
         self.text_queue = queue.Queue()  # (thread-safe text queue)
         self.font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
         self.lock = threading.Lock()
+
+        # add dynamic path for the image and video
+        self.image_name = None
+        self.video_path = None
+        self.log_path = None
     
     def add_annotation(self, text):
         """Add text annotation"""
@@ -51,13 +56,14 @@ class ScreenRecorder:
             })
         
         # write the annotation to the log
-        log_entry = (
-            f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
-            f"Content: {text}\n"
-            "------------------------\n"
-        )
-        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
-            f.write(log_entry)
+        if self.is_recording:
+            log_entry = (
+                f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
+                f"Content: {text}\n"
+                "------------------------\n"
+            )
+            with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+                f.write(log_entry)
     
     def _draw_text(self, img_np):
         """Draw text on the image"""
@@ -91,9 +97,15 @@ class ScreenRecorder:
         self.is_recording = True
         self.start_time = datetime.now()
 
+        # generate the file name
+        timestamp_str = self.start_time.strftime("%Y%m%d_%H%M_%S")
+        base_name = f"{timestamp_str}_{self.image_name}"
+        self.video_path = os.path.join(RECORD_PATH, f"{base_name}.mp4")
+        self.log_path = os.path.join(RECORD_PATH, f"{base_name}_log.txt")
+
         # write the start time to the log
         timestamp_start = self.start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+        with open(self.log_path, "a") as f:
             f.write(f"\n[Video Recording Started] {timestamp_start}\n")
         
         # get the napari window coordinates
@@ -102,7 +114,7 @@ class ScreenRecorder:
         self._update_region(win)
         
         # intialize the video writer
-        self.writer = get_writer(VIDEO_PATH, format='FFMPEG', fps=FPS)
+        self.writer = get_writer(self.video_path, format='FFMPEG', fps=FPS)
         
         # start the screen capture thread
         self.capture_thread = threading.Thread(target=self._capture_loop)
@@ -164,7 +176,8 @@ recorder = ScreenRecorder()
 
 # set the file path
 filepath = "D:/projects/spingpt/data/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii"
-print("The file exist:", os.path.exists(filepath))
+image_name = os.path.splitext(os.path.basename(filepath))[0]
+recorder.image_name = image_name  # set the image name
 
 # read the image data
 reader = napari_get_reader(filepath)
@@ -222,8 +235,9 @@ def on_points_changed(event):
             log_info.append(log_entry)
             print(log_entry.strip())
         
-        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
-            f.writelines(log_info)
+        if recorder.is_recording:
+            with open(recorder.log_path, "a") as f:
+                f.writelines(log_info)
         
         previous_length = current_length
 
