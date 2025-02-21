@@ -13,11 +13,20 @@ from napari_nifti._reader import napari_get_reader
 import napari
 from napari import Viewer
 
+from PIL import Image, ImageDraw, ImageFont
+import queue
+
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
 VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
+
+FONT_PATH = "arial.ttf"  # font file path
+FONT_SIZE = 20
+TEXT_COLOR = (255, 0, 0)  # red text
+TEXT_POSITION = (10, 10)  # text position
+MAX_TEXT_DURATION = 5  # seconds of text duration
 
 class ScreenRecorder:
     def __init__(self):
@@ -27,6 +36,55 @@ class ScreenRecorder:
         self.capture_thread = None
         self.start_time = None
         self.end_time = None
+        self.text_queue = queue.Queue()  # (thread-safe text queue)
+        self.font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
+        self.lock = threading.Lock()
+    
+    def add_annotation(self, text):
+        """Add text annotation"""
+        timestamp = datetime.now()
+        with self.lock:
+            self.text_queue.put({
+                "text": text,
+                "timestamp": timestamp,
+                "expire_time": timestamp.timestamp() + MAX_TEXT_DURATION
+            })
+        
+        # write the annotation to the log
+        log_entry = (
+            f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
+            f"Content: {text}\n"
+            "------------------------\n"
+        )
+        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+            f.write(log_entry)
+    
+    def _draw_text(self, img_np):
+        """Draw text on the image"""
+        current_time = time.time()
+        
+        # transfer the numpy array to PIL image
+        pil_img = Image.fromarray(img_np)
+        draw = ImageDraw.Draw(pil_img)
+        
+        # deal with all text annotations
+        temp_queue = queue.Queue()
+        while not self.text_queue.empty():
+            annotation = self.text_queue.get()
+            if current_time < annotation["expire_time"]:
+                draw.text(TEXT_POSITION, 
+                         f"{annotation['text']} ({annotation['timestamp'].strftime('%H:%M:%S')})",
+                         fill=TEXT_COLOR, 
+                         font=self.font)
+                temp_queue.put(annotation)
+        
+        # update the text queue
+        with self.lock:
+            while not temp_queue.empty():
+                self.text_queue.put(temp_queue.get())
+        
+        return np.array(pil_img)
+
 
     def start_recording(self, viewer):
         # auto detect the recording region and start recording
@@ -69,6 +127,11 @@ class ScreenRecorder:
                     img = np.array(sct.grab(self.monitor))
                     # transfrom to RGB format
                     img = img[..., :3]
+
+                    # draw the text on the image
+                    if not self.text_queue.empty():
+                        img = self._draw_text(img)
+
                     # write the video frame
                     self.writer.append_data(img)
                     time.sleep(1/FPS)
@@ -175,6 +238,27 @@ def toggle_recording(viewer):
     else:
         recorder.stop_recording()
         print("stop recording")
+
+@viewer.bind_key('T')
+def add_annotation(viewer):
+    from qtpy.QtWidgets import QInputDialog, QMessageBox
+    
+    # create an input dialog
+    text, ok = QInputDialog.getText(
+        viewer.window._qt_window,
+        'Add text',
+        'Type in:',
+    )
+    
+    if ok and text:
+        recorder.add_annotation(text)
+        print(f"Already add text: {text}")
+    elif not ok:
+        QMessageBox.information(
+            viewer.window._qt_window,
+            'Operation cancelled',
+            'User cancelled the text input operation'
+        )
 
 # auto start the recording (if you want to start recording automatically, uncomment the following code)
 # viewer.window._qt_window.showEvent = lambda event: recorder.start_recording(viewer)
