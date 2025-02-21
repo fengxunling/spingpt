@@ -1,0 +1,6 @@
+“Plot a sagittal view of the region around the lesion in patient X”
+“Filter the artifacts and enhance the quality of this MRI volume”
+“Generate a 3D reconstruction of the thoracic spine for this patient and export the file in STL format”  
+“What is the intervertebral distance between regions C1 and C2”
+“Compute spinal cord diameter variabilities across patients for the lumbar regions, and export the result as a csv file”
+“Compute the rostrocaudal between the lesion of the spinal cord and the conus medullaris.”
