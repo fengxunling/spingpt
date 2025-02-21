@@ -256,29 +256,58 @@ viewer.dims.events.current_step.connect(sync_sliders)
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-axial_slice = image_array[initial_z, :, :]
-coronal_slice = image_array[:, initial_y, :]
+axial_slice = np.rot90(image_array[initial_z, :, :], k=1)
+coronal_slice = np.rot90(image_array[:, initial_y, :], k=1)
 sagittal_slice = image_array[:, :, initial_x]
 
 axial_layer = viewer.add_image(axial_slice, name='Axial')
-coronal_layer = viewer.add_image(coronal_slice.T, name='Coronal')  # Transpose for correct orientation
-sagittal_layer = viewer.add_image(sagittal_slice.T, name='Sagittal')  # Transpose for correct orientation
+coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
+sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 # Set grid layout
 viewer.grid.enabled = True
 viewer.grid.shape = (1, 3)  # 1 row, 3 columns
+# viewer.grid.stride = 0  # 消除视图间的默认间隔
+
+# 在文件开头添加字体颜色定义
+TEXT_COLOR_WHITE = 255  # 白色文字
+VIEWER_TEXT_POSITION = (10, 10)     # 视图文字位置
+
+# 在ScreenRecorder类外添加字体初始化（或类内添加）
+viewer_font = ImageFont.truetype(FONT_PATH, 40) # 字体大小
+
+def add_text_to_slice(slice_data, text):
+    """在切片上添加文字标注"""
+    pil_img = Image.fromarray(slice_data)
+    draw = ImageDraw.Draw(pil_img)
+    draw.text(VIEWER_TEXT_POSITION, 
+             text,
+             fill=TEXT_COLOR_WHITE, 
+             font=viewer_font)
+    return np.array(pil_img)
 
 def update_slices(event):
-    """Update all views when navigating through slices"""
+    """带旋转和文字标注的切片更新"""
     z, y, x = viewer.dims.current_step
-    # print(f"current z: {z}, y: {y}, x: {x}")
     
-    # Update slice data
-    axial_layer.data = image_array[z, :, :]
-    coronal_layer.data = image_array[:, y, :].T  # Transpose coronal view
-    sagittal_layer.data = image_array[:, :, x].T  # Transpose sagittal view
+    # 轴向视图（绕逆时针旋转90度）
+    axial_slice = np.rot90(image_array[z, :, :], k=1)
+    axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
     
-    # Refresh displays
+    # 冠状视图（保持原方向，添加转置）
+    coronal_slice = np.rot90(image_array[:, y, :], k=1)
+    coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
+    
+    # 矢状视图（绕逆时针旋转90度）
+    sagittal_slice = image_array[:, :, x]
+    sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
+
+    # 更新图层数据
+    axial_layer.data = axial_slice
+    coronal_layer.data = coronal_slice
+    sagittal_layer.data = sagittal_slice
+    
+    # 刷新显示
     axial_layer.refresh()
     coronal_layer.refresh()
     sagittal_layer.refresh()
