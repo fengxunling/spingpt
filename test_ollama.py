@@ -6,10 +6,15 @@
 
 import ollama
 import re
+import os
+import sys
+
+file_path = os.path.dirname(os.path.realpath(__file__))
 
 def read_prompts(filename):
     """Read prompts enclosed in double quotes"""
-    with open(filename, 'r') as f:
+    # Specify encoding when opening the file
+    with open(filename, 'r', encoding='utf-8') as f:
         content = f.read()
     # Use regular expression to match content within double quotes
     return re.findall(r'"([^"]*)"', content)
@@ -22,7 +27,7 @@ def generate_napari_code(prompt):
         "1. Assume the image data is loaded as a numpy array\n"
         "2. Use napari's API for visualization operations\n"
         "3. Include necessary image processing steps\n"
-        "4. Be enclosed in a ```python code block"
+        "4. Be enclosed in a ```python code block and make usre it is executable in napari\n"
     )
 
     response = ollama.chat(
@@ -35,31 +40,28 @@ def generate_napari_code(prompt):
     return response['message']['content']
 
 def main():
-    try:
-        # Read prompts from file
-        prompts = read_prompts('test_prompts.txt')
+    # Read prompts from file
+    prompts = read_prompts(file_path+'/test_prompts.txt')
+    print('prompts:', prompts)
+    
+    # generate code for each prompt
+    for i, prompt in enumerate(prompts, 1):
+        print(f"\nProcessing Prompt {i}: {prompt}")
         
-        # generate code for each prompt
-        for i, prompt in enumerate(prompts, 1):
-            print(f"\nProcessing Prompt {i}: {prompt}")
+        generated_code = generate_napari_code(prompt)
+        
+        # extract code block
+        code_block = re.search(r'```python(.*?)```', generated_code, re.DOTALL)
+        if code_block:
+            executable_code = code_block.group(1).strip()
+            print(f"\nGenerated Code for Prompt {i}:\n{executable_code}")
             
-            generated_code = generate_napari_code(prompt)
-            
-            # extract code block
-            code_block = re.search(r'```python(.*?)```', generated_code, re.DOTALL)
-            if code_block:
-                executable_code = code_block.group(1).strip()
-                print(f"\nGenerated Code for Prompt {i}:\n{executable_code}")
-                
-                with open(f"generated_code_{i}.py", 'w') as f:
-                    f.write(executable_code)
-            else:
-                print(f"No valid code block found in response for prompt {i}")
+            # Specify encoding when writing output files
+            with open(f"generated_code_{i}.py", 'w', encoding='utf-8') as f:
+                f.write(executable_code)
+        else:
+            print(f"No valid code block found in response for prompt {i}")
 
-    except FileNotFoundError:
-        print("Error: test_prompts.txt file not found")
-    except Exception as e:
-        print(f"An error occurred: {str(e)}")
 
 if __name__ == "__main__":
     main()

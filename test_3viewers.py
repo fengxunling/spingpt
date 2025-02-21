@@ -194,12 +194,46 @@ if not layer_data:
 image_array = layer_data[0][0]
 metadata = layer_data[0][1]
 
-# create Viewer
+
+# Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
-image_layer = viewer.add_image(image_array, **metadata)
+image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 
-# add 3D points layer
+# Get initial slice positions
+initial_z, initial_y, initial_x = viewer.dims.current_step
+
+# Add orthogonal 2D slice layers
+axial_slice = image_array[initial_z, :, :]
+coronal_slice = image_array[:, initial_y, :]
+sagittal_slice = image_array[:, :, initial_x]
+
+axial_layer = viewer.add_image(axial_slice, name='Axial')
+coronal_layer = viewer.add_image(coronal_slice.T, name='Coronal')  # Transpose for correct orientation
+sagittal_layer = viewer.add_image(sagittal_slice.T, name='Sagittal')  # Transpose for correct orientation
+
+# Set grid layout
+viewer.grid.enabled = True
+viewer.grid.shape = (1, 3)  # 1 row, 3 columns
+
+def update_slices(event):
+    """Update all views when navigating through slices"""
+    z, y, x = viewer.dims.current_step
+    
+    # Update slice data
+    axial_layer.data = image_array[z, :, :]
+    coronal_layer.data = image_array[:, y, :].T  # Transpose coronal view
+    sagittal_layer.data = image_array[:, :, x].T  # Transpose sagittal view
+    
+    # Refresh displays
+    axial_layer.refresh()
+    coronal_layer.refresh()
+    sagittal_layer.refresh()
+
+# Connect dimension updates
+viewer.dims.events.current_step.connect(update_slices)
+
+# Add points layer and other existing logic
 points_layer = viewer.add_points(
     name='3d corresponding points',
     ndim=3,
