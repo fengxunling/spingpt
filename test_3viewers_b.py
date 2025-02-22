@@ -266,11 +266,14 @@ sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 # Set grid layout
 layer = viewer.layers['Axial'] # 获取目标图层
-layer.translate = (0, 0)  # 将图层移动到坐标处
+layer.translate = (-100, -200)  # 将图层移动到坐标处
+layer.scale = [0.3, 0.3] 
 layer = viewer.layers['Sagittal'] 
-layer.translate = (0, 400)  
+layer.translate = (-100, -100)  
+layer.scale = [0.3, 0.3] 
 layer = viewer.layers['Coronal'] 
-layer.translate = (0, 800) 
+layer.translate = (-50, 0) 
+layer.scale = [0.2, 0.2] 
 
 
 # 在文件开头添加字体颜色定义
