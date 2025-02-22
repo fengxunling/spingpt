@@ -197,6 +197,7 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
+viewer.window._qt_window.showFullScreen()
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
