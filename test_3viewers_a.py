@@ -263,18 +263,20 @@ sagittal_slice = image_array[:, :, initial_x]
 axial_layer = viewer.add_image(axial_slice, name='Axial')
 coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
+axial_layer.scale = [2.5, 2.5]  # 调整缩放因子
+coronal_layer.scale = [1, 1]  # 调整缩放因子
+sagittal_layer.scale = [2.5, 2.5]  # 调整缩放因子
 
 # Set grid layout
 viewer.grid.enabled = True
 viewer.grid.shape = (1, 3)  # 1 row, 3 columns
-# viewer.grid.stride = 0  # 消除视图间的默认间隔
 
 # 在文件开头添加字体颜色定义
-TEXT_COLOR_WHITE = 255  # 白色文字
-VIEWER_TEXT_POSITION = (10, 10)     # 视图文字位置
+TEXT_COLOR_WHITE = 800  # 白色文字
+VIEWER_TEXT_POSITION = (0, 0)     # 视图文字位置
 
 # 在ScreenRecorder类外添加字体初始化（或类内添加）
-viewer_font = ImageFont.truetype(FONT_PATH, 40) # 字体大小
+viewer_font = ImageFont.truetype(FONT_PATH, 20) # 字体大小
 
 def add_text_to_slice(slice_data, text):
     """在切片上添加文字标注"""
@@ -284,6 +286,15 @@ def add_text_to_slice(slice_data, text):
              text,
              fill=TEXT_COLOR_WHITE, 
              font=viewer_font)
+    
+    # 添加白色边框
+    border_width = 2
+    draw.rectangle(
+        [(0, 0), (pil_img.width-1, pil_img.height-1)],  # 边框范围
+        outline=TEXT_COLOR_WHITE, 
+        width=border_width
+    )
+    
     return np.array(pil_img)
 
 def update_slices(event):
