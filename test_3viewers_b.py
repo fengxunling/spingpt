@@ -18,7 +18,6 @@ import queue
 
 import nibabel as nib
 
-
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
 VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
@@ -185,10 +184,10 @@ recorder.image_name = image_name  # set the image name
 img = nib.load(filepath)
 header = img.header
 
-# 图像维度
+# image dimensions
 dimensions = header.get_data_shape()  
 print(dimensions)
-# 体素尺寸（单位：毫米）
+# voxel dimensions (in mm)
 voxel_sizes = header.get_zooms()    
 print(voxel_sizes) 
 
@@ -215,24 +214,23 @@ image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 
-# 在创建viewer后添加以下代码
 slider_container = QWidget()
 slider_layout = QVBoxLayout()
 
-# Z轴滑块
+# z axis slider
 z_slider = QSlider()
-z_slider.setOrientation(1)  # 垂直滑块
+z_slider.setOrientation(1)  # vertical slider
 z_slider.setMinimum(0)
-z_slider.setMaximum(image_array.shape[0]-1)  # 使用第一个维度
+z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
 def update_z(value):
     current_step = list(viewer.dims.current_step)
-    current_step[0] = value  # 修改第一个维度
+    current_step[0] = value  # change the first dimension
     viewer.dims.current_step = tuple(current_step)
 z_slider.valueChanged.connect(update_z)
 
-# Y轴滑块
+# y axis slider
 y_slider = QSlider()
-y_slider.setOrientation(1)  # 垂直滑块
+y_slider.setOrientation(1)  # vertical slider
 y_slider.setMinimum(0)
 y_slider.setMaximum(image_array.shape[1]-1)
 def update_y(value):
@@ -241,9 +239,9 @@ def update_y(value):
     viewer.dims.current_step = tuple(current_step)
 y_slider.valueChanged.connect(update_y)
 
-# X轴滑块
+# x axis slider
 x_slider = QSlider()
-x_slider.setOrientation(1)  # 垂直滑块
+x_slider.setOrientation(1)  # vertical slider
 x_slider.setMinimum(0)
 x_slider.setMaximum(image_array.shape[2]-1)
 def update_x(value):
@@ -252,16 +250,16 @@ def update_x(value):
     viewer.dims.current_step = tuple(current_step)
 x_slider.valueChanged.connect(update_x)
 
-# 将滑块添加到界面（按Z-Y-X顺序）
-slider_layout.addWidget(z_slider)
-slider_layout.addWidget(y_slider)
+# add sliders to the layout (in X-Y-Z order)
 slider_layout.addWidget(x_slider)
+slider_layout.addWidget(y_slider)
+slider_layout.addWidget(z_slider)
 slider_container.setLayout(slider_layout)
 viewer.window.add_dock_widget(slider_container, name="Axis Controls")
 
-# 同步滑块位置
+# Sync sliders with the viewer
 def sync_sliders(event):
-    z_slider.setValue(viewer.dims.current_step[0])  # 同步Z轴
+    z_slider.setValue(viewer.dims.current_step[0]) 
     y_slider.setValue(viewer.dims.current_step[1])
     x_slider.setValue(viewer.dims.current_step[2])
 viewer.dims.events.current_step.connect(sync_sliders)
@@ -279,15 +277,15 @@ coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 
-# 在文件开头添加字体颜色定义
-TEXT_COLOR_WHITE = 1000  # 白色文字
-VIEWER_TEXT_POSITION = (10, 10)     # 视图文字位置
+# add text color definition at the beginning of the file
+TEXT_COLOR_WHITE = 1000  # white text
+VIEWER_TEXT_POSITION = (10, 10) # 视图文字位置
 
-# 在ScreenRecorder类外添加字体初始化（或类内添加）
-viewer_font = ImageFont.truetype(FONT_PATH, 15) # 字体大小
+# add font initialization at the beginning of the file
+viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
 
 def add_text_to_slice(slice_data, text):
-    """在切片上添加文字标注"""
+    """add text annotation to the slice"""
     pil_img = Image.fromarray(slice_data)
     draw = ImageDraw.Draw(pil_img)
     draw.text(VIEWER_TEXT_POSITION, 
@@ -297,8 +295,8 @@ def add_text_to_slice(slice_data, text):
     return np.array(pil_img)
 
 # Set grid layout
-axial_layer = viewer.layers['Axial'] # 获取目标图层
-axial_layer.translate = (-100, -200)  # 将图层移动到坐标处
+axial_layer = viewer.layers['Axial'] # get the target layer
+axial_layer.translate = (-100, -200)  # move the layer to the specified position
 axial_layer.scale = [0.28, 0.28] 
 sagittal_layer = viewer.layers['Sagittal'] 
 sagittal_layer.translate = (-100, -125)  
@@ -307,19 +305,19 @@ coronal_layer = viewer.layers['Coronal']
 coronal_layer.translate = (-100, -55) 
 coronal_layer.scale = [0.28, 0.28] 
 
-# 创建交叉线图层
+# Create line layer
 def create_line_layer(color, line_data, layer):
     return viewer.add_shapes(
         line_data,
         shape_type='line',
         edge_color=color,
         edge_width=1,
-        scale=layer.scale,  # 与对应视图的缩放保持一致
-        translate=layer.translate,  # 初始位置与轴向视图对齐
+        scale=layer.scale,  # maintain the same scale as the corresponding view
+        translate=layer.translate,  # align with the axial view
         visible=True
     )
 
-# 为每个视图创建对应的定位线图层
+# create line layers for each view
 axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
 axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
 axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer)  
@@ -337,22 +335,22 @@ sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_lay
 
 
 def update_slices(event):
-    """带旋转和文字标注的切片更新"""
+    """Update the slices with rotation and text annotation"""
     z, y, x = viewer.dims.current_step
     
-    # 轴向视图（绕逆时针旋转90度）
+    # axial view (rotate 90 degrees counterclockwise)
     axial_slice = np.rot90(image_array[z, :, :], k=1)
     axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
     
-    # 冠状视图（保持原方向，添加转置）
+    # coronal view (rotate 90 degrees counterclockwise)
     coronal_slice = np.rot90(image_array[:, y, :], k=1)
     coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
     
-    # 矢状视图（绕逆时针旋转90度）
+    # sagittal view
     sagittal_slice = image_array[:, :, x]
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
 
-    # # 更新定位线位置
+    # update the line positions
     axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
     axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
     axial_h_line.refresh()
@@ -368,29 +366,16 @@ def update_slices(event):
     sagittal_h_line.refresh()
     sagittal_v_line.refresh()
     
-    # 更新图层数据
+    # update the layer data
     axial_layer.data = axial_slice
     coronal_layer.data = coronal_slice
     sagittal_layer.data = sagittal_slice
     
-    # 刷新显示
+    # refresh the display
     axial_layer.refresh()
     coronal_layer.refresh()
     sagittal_layer.refresh()
 
-
-# 同时更新线条图层的缩放和位移参数
-for line_layer in [axial_h_line, axial_v_line]:
-    line_layer.scale = axial_layer.scale
-    line_layer.translate = axial_layer.translate
-
-# for line_layer in [coronal_h_line, coronal_v_line]:
-#     line_layer.scale = coronal_layer.scale
-#     line_layer.translate = coronal_layer.translate
-
-# for line_layer in [sagittal_h_line, sagittal_v_line]:
-#     line_layer.scale = sagittal_layer.scale
-#     line_layer.translate = sagittal_layer.translate
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)
