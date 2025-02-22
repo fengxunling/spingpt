@@ -210,7 +210,7 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
-viewer.window._qt_window.showFullScreen()
+# viewer.window._qt_window.showFullScreen() # full screen
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
@@ -278,17 +278,6 @@ axial_layer = viewer.add_image(axial_slice, name='Axial')
 coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
-# Set grid layout
-layer = viewer.layers['Axial'] # 获取目标图层
-layer.translate = (-100, -200)  # 将图层移动到坐标处
-layer.scale = [0.28, 0.28] 
-layer = viewer.layers['Sagittal'] 
-layer.translate = (-100, -125)  
-layer.scale = [0.28, 0.28] 
-layer = viewer.layers['Coronal'] 
-layer.translate = (-100, -55) 
-layer.scale = [0.28, 0.28] 
-
 
 # 在文件开头添加字体颜色定义
 TEXT_COLOR_WHITE = 1000  # 白色文字
@@ -307,6 +296,46 @@ def add_text_to_slice(slice_data, text):
              font=viewer_font)
     return np.array(pil_img)
 
+# Set grid layout
+axial_layer = viewer.layers['Axial'] # 获取目标图层
+axial_layer.translate = (-100, -200)  # 将图层移动到坐标处
+axial_layer.scale = [0.28, 0.28] 
+sagittal_layer = viewer.layers['Sagittal'] 
+sagittal_layer.translate = (-100, -125)  
+sagittal_layer.scale = [0.28, 0.28] 
+coronal_layer = viewer.layers['Coronal'] 
+coronal_layer.translate = (-100, -55) 
+coronal_layer.scale = [0.28, 0.28] 
+
+# 创建交叉线图层
+def create_line_layer(color, line_data, layer):
+    return viewer.add_shapes(
+        line_data,
+        shape_type='line',
+        edge_color=color,
+        edge_width=1,
+        scale=layer.scale,  # 与对应视图的缩放保持一致
+        translate=layer.translate,  # 初始位置与轴向视图对齐
+        visible=True
+    )
+
+# 为每个视图创建对应的定位线图层
+axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
+axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
+axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer)  
+axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer)  
+
+coronal_h_line_data = np.array([[0, initial_z], [coronal_slice.shape[0], initial_z]])
+coronal_v_line_data = np.array([[initial_x, 0], [initial_x, coronal_slice.shape[1]]])
+coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer)  
+coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer)
+
+sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
+sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
+sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer) 
+sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer)
+
+
 def update_slices(event):
     """带旋转和文字标注的切片更新"""
     z, y, x = viewer.dims.current_step
@@ -323,6 +352,22 @@ def update_slices(event):
     sagittal_slice = image_array[:, :, x]
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
 
+    # # 更新定位线位置
+    axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
+    axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
+    axial_h_line.refresh()
+    axial_v_line.refresh()
+
+    coronal_h_line.data = np.array([[0, z], [coronal_slice.shape[0], z]])
+    coronal_v_line.data = np.array([[x, 0], [x, coronal_slice.shape[1]]])
+    coronal_h_line.refresh()
+    coronal_v_line.refresh()
+
+    sagittal_h_line.data = np.array([[z, 0], [z, sagittal_slice.shape[1]]])
+    sagittal_v_line.data = np.array([[0, y], [sagittal_slice.shape[0], y]])
+    sagittal_h_line.refresh()
+    sagittal_v_line.refresh()
+    
     # 更新图层数据
     axial_layer.data = axial_slice
     coronal_layer.data = coronal_slice
@@ -332,6 +377,20 @@ def update_slices(event):
     axial_layer.refresh()
     coronal_layer.refresh()
     sagittal_layer.refresh()
+
+
+# 同时更新线条图层的缩放和位移参数
+for line_layer in [axial_h_line, axial_v_line]:
+    line_layer.scale = axial_layer.scale
+    line_layer.translate = axial_layer.translate
+
+# for line_layer in [coronal_h_line, coronal_v_line]:
+#     line_layer.scale = coronal_layer.scale
+#     line_layer.translate = coronal_layer.translate
+
+# for line_layer in [sagittal_h_line, sagittal_v_line]:
+#     line_layer.scale = sagittal_layer.scale
+#     line_layer.translate = sagittal_layer.translate
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)

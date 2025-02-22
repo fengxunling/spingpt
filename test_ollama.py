@@ -1,9 +1,3 @@
-# import ollama
-
-# response = ollama.generate(model='deepseek-r1:7b',
-# prompt='hello world!')
-# print(response['response'])
-
 import ollama
 import re
 import os
