@@ -267,21 +267,21 @@ sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 # Set grid layout
 layer = viewer.layers['Axial'] # 获取目标图层
 layer.translate = (-100, -200)  # 将图层移动到坐标处
-layer.scale = [0.3, 0.3] 
+layer.scale = [0.28, 0.28] 
 layer = viewer.layers['Sagittal'] 
-layer.translate = (-100, -100)  
-layer.scale = [0.3, 0.3] 
+layer.translate = (-100, -125)  
+layer.scale = [0.28, 0.28] 
 layer = viewer.layers['Coronal'] 
-layer.translate = (-50, 0) 
-layer.scale = [0.2, 0.2] 
+layer.translate = (-100, -55) 
+layer.scale = [0.28, 0.28] 
 
 
 # 在文件开头添加字体颜色定义
-TEXT_COLOR_WHITE = 255  # 白色文字
+TEXT_COLOR_WHITE = 1000  # 白色文字
 VIEWER_TEXT_POSITION = (10, 10)     # 视图文字位置
 
 # 在ScreenRecorder类外添加字体初始化（或类内添加）
-viewer_font = ImageFont.truetype(FONT_PATH, 40) # 字体大小
+viewer_font = ImageFont.truetype(FONT_PATH, 15) # 字体大小
 
 def add_text_to_slice(slice_data, text):
     """在切片上添加文字标注"""
@@ -326,7 +326,7 @@ viewer.dims.events.current_step.connect(update_slices)
 points_layer = viewer.add_points(
     name='3d corresponding points',
     ndim=3,
-    size=10,
+    size=3,
     face_color='red'
 )
 
