@@ -268,10 +268,12 @@ viewer.dims.events.current_step.connect(sync_sliders)
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-axial_slice = np.rot90(image_array[initial_z, :, :], k=1)
-coronal_slice = np.rot90(image_array[:, initial_y, :], k=1)
-sagittal_slice = image_array[:, :, initial_x]
-
+axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
+coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
+sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
+print('axial_slice:', axial_slice.shape)
+print('coronal_slice:', coronal_slice.shape)
+print('sagittal_slice:', sagittal_slice.shape)
 axial_layer = viewer.add_image(axial_slice, name='Axial')
 coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
@@ -279,7 +281,7 @@ sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 # add text color definition at the beginning of the file
 TEXT_COLOR_WHITE = 1000  # white text
-VIEWER_TEXT_POSITION = (10, 10) # 视图文字位置
+VIEWER_TEXT_POSITION = (10, 10) # coordinates of the text
 
 # add font initialization at the beginning of the file
 viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
@@ -296,14 +298,14 @@ def add_text_to_slice(slice_data, text):
 
 # Set grid layout
 axial_layer = viewer.layers['Axial'] # get the target layer
-axial_layer.translate = (-100, -200)  # move the layer to the specified position
-axial_layer.scale = [0.28, 0.28] 
+axial_layer.translate = (130, -150)  # move the layer to the specified position
+axial_layer.scale = [0.25, 0.25] 
 sagittal_layer = viewer.layers['Sagittal'] 
-sagittal_layer.translate = (-100, -125)  
-sagittal_layer.scale = [0.28, 0.28] 
+sagittal_layer.translate = (-110, 90)  
+sagittal_layer.scale = [0.25, 0.25] 
 coronal_layer = viewer.layers['Coronal'] 
-coronal_layer.translate = (-100, -55) 
-coronal_layer.scale = [0.28, 0.28] 
+coronal_layer.translate = (-110, -150) 
+coronal_layer.scale = [0.25, 0.25] 
 
 # Create line layer
 def create_line_layer(color, line_data, layer):
@@ -311,20 +313,20 @@ def create_line_layer(color, line_data, layer):
         line_data,
         shape_type='line',
         edge_color=color,
-        edge_width=1,
+        edge_width=1.5,
         scale=layer.scale,  # maintain the same scale as the corresponding view
         translate=layer.translate,  # align with the axial view
         visible=True
     )
 
 # create line layers for each view
-axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
-axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
+axial_h_line_data = np.array([[axial_slice.shape[1]-initial_y+1, 0], [axial_slice.shape[1]-initial_y+1, axial_slice.shape[1]]])
+axial_v_line_data = np.array([[0, initial_x], [axial_slice.shape[0], initial_x]])
 axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer)  
 axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer)  
 
-coronal_h_line_data = np.array([[0, initial_z], [coronal_slice.shape[0], initial_z]])
-coronal_v_line_data = np.array([[initial_x, 0], [initial_x, coronal_slice.shape[1]]])
+coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
+coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
 coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer)  
 coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer)
 
@@ -339,30 +341,31 @@ def update_slices(event):
     z, y, x = viewer.dims.current_step
     
     # axial view (rotate 90 degrees counterclockwise)
-    axial_slice = np.rot90(image_array[z, :, :], k=1)
+    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
     axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
     
-    # coronal view (rotate 90 degrees counterclockwise)
-    coronal_slice = np.rot90(image_array[:, y, :], k=1)
+    # coronal view (rotate 180 degrees counterclockwise)
+    coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
     coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
     
     # sagittal view
-    sagittal_slice = image_array[:, :, x]
+    sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
 
     # update the line positions
-    axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
-    axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
-    axial_h_line.refresh()
-    axial_v_line.refresh()
+    axial_h_line.data = np.array([[y, 0], [y, axial_slice.shape[1]]])
+    axial_v_line.data = np.array([[0, x], [axial_slice.shape[0], x]])
 
-    coronal_h_line.data = np.array([[0, z], [coronal_slice.shape[0], z]])
-    coronal_v_line.data = np.array([[x, 0], [x, coronal_slice.shape[1]]])
-    coronal_h_line.refresh()
-    coronal_v_line.refresh()
+    coronal_h_line.data = np.array([[z, 0], [z, coronal_slice.shape[1]]])
+    coronal_v_line.data = np.array([[0, x], [coronal_slice.shape[0], x]])
 
     sagittal_h_line.data = np.array([[z, 0], [z, sagittal_slice.shape[1]]])
     sagittal_v_line.data = np.array([[0, y], [sagittal_slice.shape[0], y]])
+
+    axial_h_line.refresh()
+    axial_v_line.refresh()
+    coronal_h_line.refresh()
+    coronal_v_line.refresh()
     sagittal_h_line.refresh()
     sagittal_v_line.refresh()
     
