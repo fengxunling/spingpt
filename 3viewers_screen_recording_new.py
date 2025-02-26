@@ -18,6 +18,7 @@ import queue
 
 import nibabel as nib
 from qtpy.QtCore import QPoint
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout
 
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
@@ -216,31 +217,9 @@ image_layer = viewer.add_image(image_array, **metadata, visible=False)
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 
 slider_container = QWidget()
+main_layout = QVBoxLayout()  
 slider_layout = QVBoxLayout()
 
-# z axis slider
-z_slider = QSlider()
-z_slider.setOrientation(1)  # vertical slider
-z_slider.setMinimum(0)
-z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
-def update_z(value):
-    current_step = list(viewer.dims.current_step)
-    current_step[0] = value  # change the first dimension
-    viewer.dims.current_step = tuple(current_step)
-z_slider.valueChanged.connect(update_z)
-
-# y axis slider
-y_slider = QSlider()
-y_slider.setOrientation(1)  # vertical slider
-y_slider.setMinimum(0)
-y_slider.setMaximum(image_array.shape[1]-1)
-def update_y(value):
-    current_step = list(viewer.dims.current_step)
-    current_step[1] = value
-    viewer.dims.current_step = tuple(current_step)
-y_slider.valueChanged.connect(update_y)
-
-# x axis slider
 x_slider = QSlider()
 x_slider.setOrientation(1)  # vertical slider
 x_slider.setMinimum(0)
@@ -251,19 +230,61 @@ def update_x(value):
     viewer.dims.current_step = tuple(current_step)
 x_slider.valueChanged.connect(update_x)
 
-# add sliders to the layout (in X-Y-Z order)
+y_slider = QSlider()
+y_slider.setOrientation(1)  # vertical slider
+y_slider.setMinimum(0)
+y_slider.setMaximum(image_array.shape[1]-1)
+def update_y(value):
+    current_step = list(viewer.dims.current_step)
+    current_step[1] = value
+    viewer.dims.current_step = tuple(current_step)
+y_slider.valueChanged.connect(update_y)
+
+z_slider = QSlider()
+z_slider.setOrientation(1)  # vertical slider
+z_slider.setMinimum(0)
+z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
+def update_z(value):
+    current_step = list(viewer.dims.current_step)
+    current_step[0] = value  # change the first dimension
+    viewer.dims.current_step = tuple(current_step)
+z_slider.valueChanged.connect(update_z)
+
 slider_layout.addWidget(x_slider)
 slider_layout.addWidget(y_slider)
 slider_layout.addWidget(z_slider)
-slider_container.setLayout(slider_layout)
-viewer.window.add_dock_widget(slider_container, name="Axis Controls")
+
+# create input box
+input_layout = QHBoxLayout()
+annotation_input = QLineEdit()
+annotation_input.setPlaceholderText("Input...")
+submit_btn = QPushButton("Submit")
+input_layout.addWidget(annotation_input)
+input_layout.addWidget(submit_btn)
+
+def submit_annotation():
+    text = annotation_input.text()
+    if text:
+        recorder.add_annotation(text)
+        annotation_input.clear()
+        print(f"Already add: {text}")
+submit_btn.clicked.connect(submit_annotation)
+annotation_input.returnPressed.connect(submit_btn.click)
+
+# add the slider and input box to the main layout
+main_layout.addLayout(slider_layout)  # add the slider first
+main_layout.addLayout(input_layout)   # then add the input box
+slider_container.setLayout(main_layout)  # set the main layout to the container
 
 # Sync sliders with the viewer
 def sync_sliders(event):
     z_slider.setValue(viewer.dims.current_step[0]) 
     y_slider.setValue(viewer.dims.current_step[1])
     x_slider.setValue(viewer.dims.current_step[2])
-viewer.dims.events.current_step.connect(sync_sliders)
+
+# add the whole container to the dock 
+axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis Controls")
+
 
 # Get initial slice positions
 initial_z, initial_y, initial_x = viewer.dims.current_step
@@ -455,27 +476,6 @@ def toggle_recording(viewer):
     else:
         recorder.stop_recording()
         print("stop recording")
-
-@viewer.bind_key('T')
-def add_annotation(viewer):
-    from qtpy.QtWidgets import QInputDialog, QMessageBox
-    
-    # create an input dialog
-    text, ok = QInputDialog.getText(
-        viewer.window._qt_window,
-        'Add text',
-        'Type in:',
-    )
-    
-    if ok and text:
-        recorder.add_annotation(text)
-        print(f"Already add text: {text}")
-    elif not ok:
-        QMessageBox.information(
-            viewer.window._qt_window,
-            'Operation cancelled',
-            'User cancelled the text input operation'
-        )
 
 
 # auto start the recording (if you want to start recording automatically, uncomment the following code)
