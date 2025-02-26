@@ -308,7 +308,7 @@ coronal_layer.translate = (-110, -150)
 coronal_layer.scale = [0.25, 0.25] 
 
 # Create line layer
-def create_line_layer(color, line_data, layer):
+def create_line_layer(color, line_data, layer, name):
     return viewer.add_shapes(
         line_data,
         shape_type='line',
@@ -316,24 +316,25 @@ def create_line_layer(color, line_data, layer):
         edge_width=1.5,
         scale=layer.scale,  # maintain the same scale as the corresponding view
         translate=layer.translate,  # align with the axial view
-        visible=True
+        visible=True,
+        name=name
     )
 
 # create line layers for each view
 axial_h_line_data = np.array([[axial_slice.shape[1]-initial_y+1, 0], [axial_slice.shape[1]-initial_y+1, axial_slice.shape[1]]])
 axial_v_line_data = np.array([[0, initial_x], [axial_slice.shape[0], initial_x]])
-axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer)  
-axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer)  
+axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial_line1')  
+axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial_line2')  
 
 coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
 coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
-coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer)  
-coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer)
+coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal_line1')  
+coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal_line2')
 
 sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
 sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
-sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer) 
-sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer)
+sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal_line1') 
+sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'saagittal_line2')
 
 
 def update_slices(event):
