@@ -381,6 +381,22 @@ def update_slices(event):
     coronal_layer.refresh()
     sagittal_layer.refresh()
 
+    # according to the current slice update the visibility of the points
+    if len(points_layer.data) > 0:
+        current_z, current_y, current_x = viewer.dims.current_step
+        visible = []
+        for point in points_layer.data:
+            p_z = int(round(point[0]))
+            p_y = int(round(point[1]))
+            p_x = int(round(point[2]))
+            # check if on any of the current slice planes
+            if p_z == current_z or p_y == current_y or p_x == current_x:
+                visible.append(True)
+            else:
+                visible.append(False)
+        points_layer.visible = visible
+        points_layer.refresh()  # refresh the point layer display
+
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)
