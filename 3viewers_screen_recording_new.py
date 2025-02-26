@@ -282,6 +282,18 @@ def sync_sliders(event):
     y_slider.setValue(viewer.dims.current_step[1])
     x_slider.setValue(viewer.dims.current_step[2])
 
+# 在滑块容器中添加按钮
+coronal_btn = QPushButton("Toggle Coronal View")
+def toggle_coronal():
+    coronal_layer.visible = not coronal_layer.visible
+    coronal_h_line.visible = not coronal_h_line.visible
+    coronal_v_line.visible = not coronal_v_line.visible
+    coronal_btn.setText("Hide Coronal" if coronal_layer.visible else "Show Coronal")
+coronal_btn.clicked.connect(toggle_coronal)
+
+# 将按钮添加到布局
+main_layout.insertWidget(1, coronal_btn)  # 在滑块下方添加按钮
+
 # add the whole container to the dock 
 axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis Controls")
 
@@ -290,14 +302,14 @@ axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis 
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
+axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=1))
 coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
 sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
 print('axial_slice:', axial_slice.shape)
 print('coronal_slice:', coronal_slice.shape)
 print('sagittal_slice:', sagittal_slice.shape)
 axial_layer = viewer.add_image(axial_slice, name='Axial')
-coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
+coronal_layer = viewer.add_image(coronal_slice, name='Coronal', visible=False)
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 
@@ -320,17 +332,17 @@ def add_text_to_slice(slice_data, text):
 
 # Set grid layout
 axial_layer = viewer.layers['Axial'] # get the target layer
-axial_layer.translate = (130, -150)  # move the layer to the specified position
-axial_layer.scale = [0.25, 0.25] 
+axial_layer.translate = (-145, -150)  # move the layer to the specified position
+axial_layer.scale = [0.38, 0.38] 
 sagittal_layer = viewer.layers['Sagittal'] 
-sagittal_layer.translate = (-110, 90)  
-sagittal_layer.scale = [0.25, 0.25] 
+sagittal_layer.translate = (-145, -60)  
+sagittal_layer.scale = [0.38, 0.38] 
 coronal_layer = viewer.layers['Coronal'] 
-coronal_layer.translate = (-110, -150) 
-coronal_layer.scale = [0.25, 0.25] 
+coronal_layer.translate = (-60, 5) 
+coronal_layer.scale = [0.18, 0.18] 
 
 # Create line layer
-def create_line_layer(color, line_data, layer, name):
+def create_line_layer(color, line_data, layer, name, visible):
     return viewer.add_shapes(
         line_data,
         shape_type='line',
@@ -338,25 +350,25 @@ def create_line_layer(color, line_data, layer, name):
         edge_width=1.5,
         scale=layer.scale,  # maintain the same scale as the corresponding view
         translate=layer.translate,  # align with the axial view
-        visible=True,
-        name=name
+        name=name,
+        visible=visible
     )
 
 # create line layers for each view
-axial_h_line_data = np.array([[axial_slice.shape[1]-initial_y+1, 0], [axial_slice.shape[1]-initial_y+1, axial_slice.shape[1]]])
-axial_v_line_data = np.array([[0, initial_x], [axial_slice.shape[0], initial_x]])
-axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial_line1')  
-axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial_line2')  
+axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
+axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
+axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial_line1', visible=True)  
+axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial_line2', visible=True)  
 
 coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
 coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
-coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal_line1')  
-coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal_line2')
+coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal_line1', visible=False)  
+coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal_line2', visible=False)
 
 sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
 sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
-sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal_line1') 
-sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'saagittal_line2')
+sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal_line1', visible=True) 
+sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'saagittal_line2', visible=True)
 
 
 def update_slices(event):
@@ -364,7 +376,7 @@ def update_slices(event):
     z, y, x = viewer.dims.current_step
     
     # axial view (rotate 90 degrees counterclockwise)
-    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
+    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=1))
     axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
     
     # coronal view (rotate 180 degrees counterclockwise)
@@ -376,8 +388,8 @@ def update_slices(event):
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
 
     # update the line positions
-    axial_h_line.data = np.array([[y, 0], [y, axial_slice.shape[1]]])
-    axial_v_line.data = np.array([[0, x], [axial_slice.shape[0], x]])
+    axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
+    axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
 
     coronal_h_line.data = np.array([[z, 0], [z, coronal_slice.shape[1]]])
     coronal_v_line.data = np.array([[0, x], [coronal_slice.shape[0], x]])
