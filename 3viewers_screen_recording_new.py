@@ -17,6 +17,7 @@ from PIL import Image, ImageDraw, ImageFont
 import queue
 
 import nibabel as nib
+from qtpy.QtCore import QPoint
 
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
@@ -64,7 +65,7 @@ class ScreenRecorder:
                 f"Content: {text}\n"
                 "------------------------\n"
             )
-            with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+            with open(self.log_path, "a") as f:
                 f.write(log_entry)
     
     def _draw_text(self, img_np):
@@ -128,8 +129,8 @@ class ScreenRecorder:
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width(),
-            "height": geo.height()
+            "width": geo.width()+1250,
+            "height": geo.height()+1000
         }
 
     def _capture_loop(self):
@@ -161,7 +162,7 @@ class ScreenRecorder:
         # write the end time to the log
         timestamp_end = self.end_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
         duration = self.end_time - self.start_time
-        with open(RECORD_PATH+"3d_points_log.txt", "a") as f:
+        with open(self.log_path, "a") as f:
             f.write(
                 f"[Video Recording Ended] {timestamp_end}\n"
                 f"[Duration] {duration.total_seconds():.2f} seconds\n\n"
