@@ -43,7 +43,7 @@ class ScreenRecorder:
         self.capture_thread = None
         self.audio_thread = None
         self.audio_frames = []
-        self.fs = 44100  # 采样率
+        self.fs = 44100  # sampling rate for the audio
         self.audio_filename = None
 
         self.start_time = None
@@ -132,23 +132,23 @@ class ScreenRecorder:
         self.capture_thread = threading.Thread(target=self._capture_loop)
         self.capture_thread.start()
 
-        # 初始化音频录制
+        # initialize the audio recording
         self.audio_filename = os.path.join(RECORD_PATH, f"{base_name}_temp.wav")
         self.audio_frames = []
         self.audio_thread = threading.Thread(target=self._record_audio)
         self.audio_thread.start()
 
     def _record_audio(self):
-        """音频录制线程"""
+        """audio recording thread"""
         try:
             with sd.InputStream(samplerate=self.fs, channels=2, callback=self._audio_callback):
                 while self.is_recording:
                     time.sleep(0.1)
         except Exception as e:
-            print(f"音频录制错误: {str(e)}")
+            print(f"Audio recording error: {str(e)}")
 
     def _audio_callback(self, indata, frames, time, status):
-        """音频数据回调"""
+        """audio callback function"""
         if status:
             print(status)
         self.audio_frames.append(indata.copy())
@@ -205,18 +205,18 @@ class ScreenRecorder:
             self.writer.close()
         print(f"The video is saved at: {os.path.abspath(VIDEO_PATH)}")
 
-        # 停止音频录制并保存
+        # stop audio recording and save
         if self.audio_thread:
             self.audio_thread.join()
             if self.audio_frames:
                 audio_data = np.concatenate(self.audio_frames)
                 write_wav(self.audio_filename, self.fs, audio_data)
-                # # 合并音视频
+                # # merge the audio and video
                 # self._merge_audio_video()
-                # os.remove(self.audio_filename)  # 删除临时音频文件
+                # os.remove(self.audio_filename) 
 
     # def _merge_audio_video(self): TODO: some bugs here
-    #     """使用FFmpeg合并音视频"""
+    #     """merge audio and video using FFmpeg"""
     #     try:
     #         cmd = (
     #             f'ffmpeg -y -i "{self.video_path}" -i "{self.audio_filename}" '
@@ -225,7 +225,7 @@ class ScreenRecorder:
     #         os.system(cmd)
     #         os.rename(self.video_path.replace(".mp4", "_final.mp4"), self.video_path)
     #     except Exception as e:
-    #         print(f"音视频合并失败: {str(e)}")
+    #         print(f"Error: {str(e)}")
 
 
 # initialize the screen recorder
@@ -335,7 +335,7 @@ def sync_sliders(event):
     y_slider.setValue(viewer.dims.current_step[1])
     x_slider.setValue(viewer.dims.current_step[2])
 
-# 在滑块容器中添加按钮
+# add a button to the slider container
 coronal_btn = QPushButton("Toggle Coronal View")
 def toggle_coronal():
     coronal_layer.visible = not coronal_layer.visible
@@ -344,8 +344,8 @@ def toggle_coronal():
     coronal_btn.setText("Hide Coronal" if coronal_layer.visible else "Show Coronal")
 coronal_btn.clicked.connect(toggle_coronal)
 
-# 将按钮添加到布局
-main_layout.insertWidget(1, coronal_btn)  # 在滑块下方添加按钮
+# add the button to the layout
+main_layout.insertWidget(1, coronal_btn)  # add the button below the slider
 
 # add the whole container to the dock 
 axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis Controls")
