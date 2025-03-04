@@ -20,6 +20,9 @@ import nibabel as nib
 from qtpy.QtCore import QPoint
 from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout
 
+import sounddevice as sd 
+from scipy.io.wavfile import write as write_wav
+
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
 VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
@@ -27,8 +30,8 @@ FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
 FONT_PATH = "arial.ttf"  # font file path
-FONT_SIZE = 20
-TEXT_COLOR = (255, 0, 0)  # red text
+FONT_SIZE = 30
+TEXT_COLOR = 255  
 TEXT_POSITION = (10, 10)  # text position
 MAX_TEXT_DURATION = 5  # seconds of text duration
 
@@ -38,6 +41,11 @@ class ScreenRecorder:
         self.writer = None
         self.monitor = None
         self.capture_thread = None
+        self.audio_thread = None
+        self.audio_frames = []
+        self.fs = 44100  # 采样率
+        self.audio_filename = None
+
         self.start_time = None
         self.end_time = None
         self.text_queue = queue.Queue()  # (thread-safe text queue)
@@ -124,6 +132,28 @@ class ScreenRecorder:
         self.capture_thread = threading.Thread(target=self._capture_loop)
         self.capture_thread.start()
 
+        # 初始化音频录制
+        self.audio_filename = os.path.join(RECORD_PATH, f"{base_name}_temp.wav")
+        self.audio_frames = []
+        self.audio_thread = threading.Thread(target=self._record_audio)
+        self.audio_thread.start()
+
+    def _record_audio(self):
+        """音频录制线程"""
+        try:
+            with sd.InputStream(samplerate=self.fs, channels=2, callback=self._audio_callback):
+                while self.is_recording:
+                    time.sleep(0.1)
+        except Exception as e:
+            print(f"音频录制错误: {str(e)}")
+
+    def _audio_callback(self, indata, frames, time, status):
+        """音频数据回调"""
+        if status:
+            print(status)
+        self.audio_frames.append(indata.copy())
+
+
     def _update_region(self, window):
         # update the napari window coordinates
         geo = window.geometry()
@@ -175,6 +205,29 @@ class ScreenRecorder:
             self.writer.close()
         print(f"The video is saved at: {os.path.abspath(VIDEO_PATH)}")
 
+        # 停止音频录制并保存
+        if self.audio_thread:
+            self.audio_thread.join()
+            if self.audio_frames:
+                audio_data = np.concatenate(self.audio_frames)
+                write_wav(self.audio_filename, self.fs, audio_data)
+                # # 合并音视频
+                # self._merge_audio_video()
+                # os.remove(self.audio_filename)  # 删除临时音频文件
+
+    # def _merge_audio_video(self): TODO: some bugs here
+    #     """使用FFmpeg合并音视频"""
+    #     try:
+    #         cmd = (
+    #             f'ffmpeg -y -i "{self.video_path}" -i "{self.audio_filename}" '
+    #             f'-c:v copy -c:a aac -strict experimental "{self.video_path.replace(".mp4", "_final.mp4")}"'
+    #         )
+    #         os.system(cmd)
+    #         os.rename(self.video_path.replace(".mp4", "_final.mp4"), self.video_path)
+    #     except Exception as e:
+    #         print(f"音视频合并失败: {str(e)}")
+
+
 # initialize the screen recorder
 recorder = ScreenRecorder()
 
@@ -211,7 +264,7 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
-viewer.window._qt_window.showFullScreen() # full screen
+# viewer.window._qt_window.showFullScreen() # full screen
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
@@ -381,7 +434,7 @@ def update_slices(event):
     
     # coronal view (rotate 180 degrees counterclockwise)
     coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
-    coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
+    # coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
     
     # sagittal view
     sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
