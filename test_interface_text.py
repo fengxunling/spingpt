@@ -87,7 +87,7 @@ if __name__ == "__main__":
     file_path = "D:/projects/spingpt/data/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii"
     
     # 初始化查看器
-    mv = MainViewer(file_path)
+    mv = MultiViewer(file_path)
     
     # 添加控制面板
     mv.add_control_panel()
