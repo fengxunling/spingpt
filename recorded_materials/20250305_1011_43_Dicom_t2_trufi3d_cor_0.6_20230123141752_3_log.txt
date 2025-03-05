@@ -1,0 +1,16 @@
+
+[Video Recording Started] 2025-03-05 10:11:43.221
+[Annotation] 2025-03-05 10:12:01.119
+Content: good!
+------------------------
+time: 2025-03-05 10:12:04.179
+spatial coordinates: [-121.09651508   24.35067046 -119.7786601 ]
+current slice: [dim0:290, dim1:36, dim2:279]
+------------------------
+time: 2025-03-05 10:12:05.212
+spatial coordinates: [-121.09651508   31.02875189 -120.33516688]
+current slice: [dim0:290, dim1:36, dim2:279]
+------------------------
+[Video Recording Ended] 2025-03-05 10:12:15.699
+[Duration] 32.48 seconds
+

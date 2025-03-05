@@ -160,8 +160,8 @@ class ScreenRecorder:
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width()+1250,
-            "height": geo.height()+1000
+            "width": geo.width(),
+            "height": geo.height()
         }
 
     def _capture_loop(self):
@@ -264,7 +264,7 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
-# viewer.window._qt_window.showFullScreen() # full screen
+viewer.window._qt_window.showFullScreen() # full screen
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
@@ -553,3 +553,4 @@ def on_close(event):
 viewer.window._qt_window.closeEvent = on_close
 
 napari.run()
+
