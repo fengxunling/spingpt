@@ -1,9 +1,10 @@
 # Multi-View Screen Recording System (for NIFTI files)
 
-![Main Viewer](assets/main_viewer.png)
 
 ## Project Overview
 A Python-based multi-view screen recording system that supports simultaneous monitoring and recording of .nifti files.
+![Main Viewer](assets/main_viewer.png)
+
 ## Quick Start
 1. Set up the environment.
 ```bash
@@ -21,6 +22,7 @@ python 3viewers_screen_recording_new.py
 ## Operation Demo
 <video controls width="100%">
   <source src="assets/demo.mp4" type="video/mp4">
+  Your browser does not support the video tag, please view the file directly: [Demo video](assets/demo.mp4) <!-- 添加备用链接 -->
 </video>
 
 ## Project Structure
