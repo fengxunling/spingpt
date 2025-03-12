@@ -277,6 +277,7 @@ x_slider = QSlider()
 x_slider.setOrientation(1)  # vertical slider
 x_slider.setMinimum(0)
 x_slider.setMaximum(image_array.shape[2]-1)
+x_slider.setValue(image_array.shape[2] // 2)
 def update_x(value):
     current_step = list(viewer.dims.current_step)
     current_step[2] = value
@@ -287,6 +288,7 @@ y_slider = QSlider()
 y_slider.setOrientation(1)  # vertical slider
 y_slider.setMinimum(0)
 y_slider.setMaximum(image_array.shape[1]-1)
+y_slider.setValue(image_array.shape[1] // 2)  
 def update_y(value):
     current_step = list(viewer.dims.current_step)
     current_step[1] = value
@@ -297,6 +299,7 @@ z_slider = QSlider()
 z_slider.setOrientation(1)  # vertical slider
 z_slider.setMinimum(0)
 z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
+z_slider.setValue(image_array.shape[0] // 2) 
 def update_z(value):
     current_step = list(viewer.dims.current_step)
     current_step[0] = value  # change the first dimension
