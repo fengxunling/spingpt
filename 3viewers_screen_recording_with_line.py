@@ -233,7 +233,7 @@ class ScreenRecorder:
 recorder = ScreenRecorder()
 
 # set the file path
-filepath = "D:/projects/spingpt/data/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii"
+filepath = "D:/projects/spingpt/data/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
 image_name = os.path.splitext(os.path.basename(filepath))[0]
 recorder.image_name = image_name  # set the image name
 

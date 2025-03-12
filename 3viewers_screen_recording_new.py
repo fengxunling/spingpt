@@ -18,7 +18,7 @@ import queue
 
 import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel
 
 
 import sounddevice as sd 
@@ -216,24 +216,12 @@ class ScreenRecorder:
                 # self._merge_audio_video()
                 # os.remove(self.audio_filename) 
 
-    # def _merge_audio_video(self): TODO: some bugs here
-    #     """merge audio and video using FFmpeg"""
-    #     try:
-    #         cmd = (
-    #             f'ffmpeg -y -i "{self.video_path}" -i "{self.audio_filename}" '
-    #             f'-c:v copy -c:a aac -strict experimental "{self.video_path.replace(".mp4", "_final.mp4")}"'
-    #         )
-    #         os.system(cmd)
-    #         os.rename(self.video_path.replace(".mp4", "_final.mp4"), self.video_path)
-    #     except Exception as e:
-    #         print(f"Error: {str(e)}")
-
 
 # initialize the screen recorder
 recorder = ScreenRecorder()
 
 # set the file path
-filepath = "D:/projects/spingpt/data/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii/Dicom_t2_trufi3d_cor_0.6_20230123141752_3.nii"
+filepath = "D:/projects/spingpt/data/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
 image_name = os.path.splitext(os.path.basename(filepath))[0]
 recorder.image_name = image_name  # set the image name
 
@@ -265,10 +253,7 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
-# for toolbar in viewer.window._qt_window.findChildren(QToolBar):
-#     print(toolbar.objectName())
-#     if toolbar.objectName() in ["3D Volume", "Transpose"]:
-#         toolbar.setVisible(False)
+
 QTimer.singleShot(100, lambda: [
     print("Found toolbars:", [tb.objectName() for tb in viewer.window._qt_window.findChildren(QToolBar)]),
     [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar) if tb.objectName() in ["3D Volume", "Transpose"]]
@@ -282,42 +267,63 @@ slider_container = QWidget()
 main_layout = QVBoxLayout()  
 slider_layout = QVBoxLayout()
 
+x_container = QWidget()
+x_layout = QVBoxLayout()
 x_slider = QSlider()
-x_slider.setOrientation(1)  # vertical slider
+x_slider.setOrientation(1)
 x_slider.setMinimum(0)
 x_slider.setMaximum(image_array.shape[2]-1)
 x_slider.setValue(image_array.shape[2] // 2)
+x_label = QLabel(f"X: {x_slider.value()}")
 def update_x(value):
     current_step = list(viewer.dims.current_step)
     current_step[2] = value
     viewer.dims.current_step = tuple(current_step)
+    x_label.setText(f"X: {value}") 
 x_slider.valueChanged.connect(update_x)
+x_layout.addWidget(x_slider)
+x_layout.addWidget(x_label)
+x_container.setLayout(x_layout)
 
+y_container = QWidget()
+y_layout = QVBoxLayout()
 y_slider = QSlider()
-y_slider.setOrientation(1)  # vertical slider
+y_slider.setOrientation(1)
 y_slider.setMinimum(0)
 y_slider.setMaximum(image_array.shape[1]-1)
-y_slider.setValue(image_array.shape[1] // 2)  
+y_slider.setValue(image_array.shape[1] // 2)
+y_label = QLabel(f"Y: {y_slider.value()}")  
 def update_y(value):
     current_step = list(viewer.dims.current_step)
     current_step[1] = value
     viewer.dims.current_step = tuple(current_step)
+    y_label.setText(f"Y: {value}")  
 y_slider.valueChanged.connect(update_y)
+y_layout.addWidget(y_slider)
+y_layout.addWidget(y_label)
+y_container.setLayout(y_layout)
 
+z_container = QWidget()
+z_layout = QVBoxLayout()
 z_slider = QSlider()
-z_slider.setOrientation(1)  # vertical slider
+z_slider.setOrientation(1)
 z_slider.setMinimum(0)
-z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
-z_slider.setValue(image_array.shape[0] // 2) 
+z_slider.setMaximum(image_array.shape[0]-1)
+z_slider.setValue(image_array.shape[0] // 2)
+z_label = QLabel(f"Z: {z_slider.value()}")  
 def update_z(value):
     current_step = list(viewer.dims.current_step)
-    current_step[0] = value  # change the first dimension
+    current_step[0] = value
     viewer.dims.current_step = tuple(current_step)
+    z_label.setText(f"Z: {value}")  
 z_slider.valueChanged.connect(update_z)
+z_layout.addWidget(z_slider)
+z_layout.addWidget(z_label)
+z_container.setLayout(z_layout)
 
-slider_layout.addWidget(x_slider)
-slider_layout.addWidget(y_slider)
-slider_layout.addWidget(z_slider)
+slider_layout.addWidget(x_container) 
+slider_layout.addWidget(y_container)
+slider_layout.addWidget(z_container)
 
 # create input box
 input_layout = QHBoxLayout()
@@ -343,9 +349,6 @@ slider_container.setLayout(main_layout)  # set the main layout to the container
 
 # Sync sliders with the viewer
 def sync_sliders(event):
-    # z_slider.setValue(viewer.dims.current_step[0]) 
-    # y_slider.setValue(viewer.dims.current_step[1])
-    # x_slider.setValue(viewer.dims.current_step[2])
     current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
     current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1) 
     current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
@@ -353,9 +356,6 @@ def sync_sliders(event):
 # add a button to the slider container
 coronal_btn = QPushButton("Toggle Coronal View")
 def toggle_coronal():
-    coronal_layer.visible = not coronal_layer.visible
-    coronal_h_line.visible = not coronal_h_line.visible
-    coronal_v_line.visible = not coronal_v_line.visible
     coronal_btn.setText("Hide Coronal" if coronal_layer.visible else "Show Coronal")
 coronal_btn.clicked.connect(toggle_coronal)
 
@@ -422,22 +422,6 @@ def create_line_layer(color, line_data, layer, name, visible):
         visible=visible
     )
 
-# create line layers for each view
-axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
-axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
-axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial line1', visible=True)  
-axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial line2', visible=True)  
-
-coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
-coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
-coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal line1', visible=False)  
-coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal line2', visible=False)
-
-sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
-sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
-sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal line1', visible=True) 
-sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'sagittal line2', visible=True)
-
 
 def update_slices(event):
     """Update the slices with rotation and text annotation"""
@@ -452,28 +436,10 @@ def update_slices(event):
     
     # coronal view (rotate 180 degrees counterclockwise)
     coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
-    # coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
     
     # sagittal view
     sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
-
-    # update the line positions
-    axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
-    axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
-
-    coronal_h_line.data = np.array([[z, 0], [z, coronal_slice.shape[1]]])
-    coronal_v_line.data = np.array([[0, x], [coronal_slice.shape[0], x]])
-
-    sagittal_h_line.data = np.array([[z, 0], [z, sagittal_slice.shape[1]]])
-    sagittal_v_line.data = np.array([[0, y], [sagittal_slice.shape[0], y]])
-
-    axial_h_line.refresh()
-    axial_v_line.refresh()
-    coronal_h_line.refresh()
-    coronal_v_line.refresh()
-    sagittal_h_line.refresh()
-    sagittal_v_line.refresh()
     
     # update the layer data
     axial_layer.data = axial_slice

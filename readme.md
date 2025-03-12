@@ -20,9 +20,6 @@ conda activate spinGPT
 python 3viewers_screen_recording_new.py
 ```
 ## Operation Demo
-<video controls width="100%">
-  <source src="assets/demo.mp4" type="video/mp4">
-  Your browser does not support the video tag, please view the file directly: [Demo video](assets/demo.mp4) <!-- 添加备用链接 -->
 </video>
 https://github.com/user-attachments/assets/258d57bf-af5a-4323-929d-e351842611ad
 
