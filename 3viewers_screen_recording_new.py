@@ -334,9 +334,12 @@ slider_container.setLayout(main_layout)  # set the main layout to the container
 
 # Sync sliders with the viewer
 def sync_sliders(event):
-    z_slider.setValue(viewer.dims.current_step[0]) 
-    y_slider.setValue(viewer.dims.current_step[1])
-    x_slider.setValue(viewer.dims.current_step[2])
+    # z_slider.setValue(viewer.dims.current_step[0]) 
+    # y_slider.setValue(viewer.dims.current_step[1])
+    # x_slider.setValue(viewer.dims.current_step[2])
+    current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
+    current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1)
+    current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
 
 # add a button to the slider container
 coronal_btn = QPushButton("Toggle Coronal View")
@@ -429,7 +432,10 @@ sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_lay
 
 def update_slices(event):
     """Update the slices with rotation and text annotation"""
-    z, y, x = viewer.dims.current_step
+    # z, y, x = viewer.dims.current_step
+    z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
+    y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1)
+    x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
     
     # axial view (rotate 90 degrees counterclockwise)
     axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=1))
