@@ -17,8 +17,12 @@ from PIL import Image, ImageDraw, ImageFont
 import queue
 
 import nibabel as nib
-from qtpy.QtCore import QPoint
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout
+from qtpy.QtCore import QPoint, QTimer
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar
+
+
+import sounddevice as sd 
+from scipy.io.wavfile import write as write_wav
 
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
@@ -27,8 +31,8 @@ FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
 FONT_PATH = "arial.ttf"  # font file path
-FONT_SIZE = 20
-TEXT_COLOR = (255, 0, 0)  # red text
+FONT_SIZE = 30
+TEXT_COLOR = 255  
 TEXT_POSITION = (10, 10)  # text position
 MAX_TEXT_DURATION = 5  # seconds of text duration
 
@@ -38,6 +42,11 @@ class ScreenRecorder:
         self.writer = None
         self.monitor = None
         self.capture_thread = None
+        self.audio_thread = None
+        self.audio_frames = []
+        self.fs = 44100  # sampling rate for the audio
+        self.audio_filename = None
+
         self.start_time = None
         self.end_time = None
         self.text_queue = queue.Queue()  # (thread-safe text queue)
@@ -124,14 +133,36 @@ class ScreenRecorder:
         self.capture_thread = threading.Thread(target=self._capture_loop)
         self.capture_thread.start()
 
+        # initialize the audio recording
+        self.audio_filename = os.path.join(RECORD_PATH, f"{base_name}_temp.wav")
+        self.audio_frames = []
+        self.audio_thread = threading.Thread(target=self._record_audio)
+        self.audio_thread.start()
+
+    def _record_audio(self):
+        """audio recording thread"""
+        try:
+            with sd.InputStream(samplerate=self.fs, channels=2, callback=self._audio_callback):
+                while self.is_recording:
+                    time.sleep(0.1)
+        except Exception as e:
+            print(f"Audio recording error: {str(e)}")
+
+    def _audio_callback(self, indata, frames, time, status):
+        """audio callback function"""
+        if status:
+            print(status)
+        self.audio_frames.append(indata.copy())
+
+
     def _update_region(self, window):
         # update the napari window coordinates
         geo = window.geometry()
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width()+1250,
-            "height": geo.height()+1000
+            "width": geo.width(),
+            "height": geo.height()
         }
 
     def _capture_loop(self):
@@ -175,6 +206,29 @@ class ScreenRecorder:
             self.writer.close()
         print(f"The video is saved at: {os.path.abspath(VIDEO_PATH)}")
 
+        # stop audio recording and save
+        if self.audio_thread:
+            self.audio_thread.join()
+            if self.audio_frames:
+                audio_data = np.concatenate(self.audio_frames)
+                write_wav(self.audio_filename, self.fs, audio_data)
+                # # merge the audio and video
+                # self._merge_audio_video()
+                # os.remove(self.audio_filename) 
+
+    # def _merge_audio_video(self): TODO: some bugs here
+    #     """merge audio and video using FFmpeg"""
+    #     try:
+    #         cmd = (
+    #             f'ffmpeg -y -i "{self.video_path}" -i "{self.audio_filename}" '
+    #             f'-c:v copy -c:a aac -strict experimental "{self.video_path.replace(".mp4", "_final.mp4")}"'
+    #         )
+    #         os.system(cmd)
+    #         os.rename(self.video_path.replace(".mp4", "_final.mp4"), self.video_path)
+    #     except Exception as e:
+    #         print(f"Error: {str(e)}")
+
+
 # initialize the screen recorder
 recorder = ScreenRecorder()
 
@@ -191,7 +245,7 @@ dimensions = header.get_data_shape()
 print(dimensions)
 # voxel dimensions (in mm)
 voxel_sizes = header.get_zooms()    
-print(voxel_sizes) 
+print(f'voxel_dimensions:{voxel_sizes}') 
 
 # read the image data
 reader = napari_get_reader(filepath)
@@ -211,6 +265,14 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
+# for toolbar in viewer.window._qt_window.findChildren(QToolBar):
+#     print(toolbar.objectName())
+#     if toolbar.objectName() in ["3D Volume", "Transpose"]:
+#         toolbar.setVisible(False)
+QTimer.singleShot(100, lambda: [
+    print("Found toolbars:", [tb.objectName() for tb in viewer.window._qt_window.findChildren(QToolBar)]),
+    [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar) if tb.objectName() in ["3D Volume", "Transpose"]]
+])
 viewer.window._qt_window.showFullScreen() # full screen
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
@@ -224,6 +286,7 @@ x_slider = QSlider()
 x_slider.setOrientation(1)  # vertical slider
 x_slider.setMinimum(0)
 x_slider.setMaximum(image_array.shape[2]-1)
+x_slider.setValue(image_array.shape[2] // 2)
 def update_x(value):
     current_step = list(viewer.dims.current_step)
     current_step[2] = value
@@ -234,6 +297,7 @@ y_slider = QSlider()
 y_slider.setOrientation(1)  # vertical slider
 y_slider.setMinimum(0)
 y_slider.setMaximum(image_array.shape[1]-1)
+y_slider.setValue(image_array.shape[1] // 2)  
 def update_y(value):
     current_step = list(viewer.dims.current_step)
     current_step[1] = value
@@ -244,6 +308,7 @@ z_slider = QSlider()
 z_slider.setOrientation(1)  # vertical slider
 z_slider.setMinimum(0)
 z_slider.setMaximum(image_array.shape[0]-1)  # use the first dimension
+z_slider.setValue(image_array.shape[0] // 2) 
 def update_z(value):
     current_step = list(viewer.dims.current_step)
     current_step[0] = value  # change the first dimension
@@ -278,9 +343,24 @@ slider_container.setLayout(main_layout)  # set the main layout to the container
 
 # Sync sliders with the viewer
 def sync_sliders(event):
-    z_slider.setValue(viewer.dims.current_step[0]) 
-    y_slider.setValue(viewer.dims.current_step[1])
-    x_slider.setValue(viewer.dims.current_step[2])
+    # z_slider.setValue(viewer.dims.current_step[0]) 
+    # y_slider.setValue(viewer.dims.current_step[1])
+    # x_slider.setValue(viewer.dims.current_step[2])
+    current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
+    current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1) 
+    current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
+
+# add a button to the slider container
+coronal_btn = QPushButton("Toggle Coronal View")
+def toggle_coronal():
+    coronal_layer.visible = not coronal_layer.visible
+    coronal_h_line.visible = not coronal_h_line.visible
+    coronal_v_line.visible = not coronal_v_line.visible
+    coronal_btn.setText("Hide Coronal" if coronal_layer.visible else "Show Coronal")
+coronal_btn.clicked.connect(toggle_coronal)
+
+# add the button to the layout
+main_layout.insertWidget(1, coronal_btn)  # add the button below the slider
 
 # add the whole container to the dock 
 axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis Controls")
@@ -290,14 +370,14 @@ axis_controls_dock = viewer.window.add_dock_widget(slider_container, name="Axis 
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
+axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=1))
 coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
 sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
 print('axial_slice:', axial_slice.shape)
 print('coronal_slice:', coronal_slice.shape)
 print('sagittal_slice:', sagittal_slice.shape)
 axial_layer = viewer.add_image(axial_slice, name='Axial')
-coronal_layer = viewer.add_image(coronal_slice, name='Coronal')
+coronal_layer = viewer.add_image(coronal_slice, name='Coronal', visible=False)
 sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 
 
@@ -320,17 +400,17 @@ def add_text_to_slice(slice_data, text):
 
 # Set grid layout
 axial_layer = viewer.layers['Axial'] # get the target layer
-axial_layer.translate = (130, -150)  # move the layer to the specified position
-axial_layer.scale = [0.25, 0.25] 
+axial_layer.translate = (-145, -150)  # move the layer to the specified position
+axial_layer.scale = [0.38, 0.38] 
 sagittal_layer = viewer.layers['Sagittal'] 
-sagittal_layer.translate = (-110, 90)  
-sagittal_layer.scale = [0.25, 0.25] 
+sagittal_layer.translate = (-145, -60)  
+sagittal_layer.scale = [0.38, 0.38] 
 coronal_layer = viewer.layers['Coronal'] 
-coronal_layer.translate = (-110, -150) 
-coronal_layer.scale = [0.25, 0.25] 
+coronal_layer.translate = (-60, 5) 
+coronal_layer.scale = [0.18, 0.18] 
 
 # Create line layer
-def create_line_layer(color, line_data, layer, name):
+def create_line_layer(color, line_data, layer, name, visible):
     return viewer.add_shapes(
         line_data,
         shape_type='line',
@@ -338,46 +418,49 @@ def create_line_layer(color, line_data, layer, name):
         edge_width=1.5,
         scale=layer.scale,  # maintain the same scale as the corresponding view
         translate=layer.translate,  # align with the axial view
-        visible=True,
-        name=name
+        name=name,
+        visible=visible
     )
 
 # create line layers for each view
-axial_h_line_data = np.array([[axial_slice.shape[1]-initial_y+1, 0], [axial_slice.shape[1]-initial_y+1, axial_slice.shape[1]]])
-axial_v_line_data = np.array([[0, initial_x], [axial_slice.shape[0], initial_x]])
-axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial_line1')  
-axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial_line2')  
+axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
+axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
+axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial line1', visible=True)  
+axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial line2', visible=True)  
 
 coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
 coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
-coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal_line1')  
-coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal_line2')
+coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal line1', visible=False)  
+coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal line2', visible=False)
 
 sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
 sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
-sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal_line1') 
-sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'saagittal_line2')
+sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal line1', visible=True) 
+sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'sagittal line2', visible=True)
 
 
 def update_slices(event):
     """Update the slices with rotation and text annotation"""
-    z, y, x = viewer.dims.current_step
+    # z, y, x = viewer.dims.current_step
+    z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
+    y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1)
+    x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
     
     # axial view (rotate 90 degrees counterclockwise)
-    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
+    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=1))
     axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
     
     # coronal view (rotate 180 degrees counterclockwise)
     coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
-    coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
+    # coronal_slice = add_text_to_slice(coronal_slice, f"Coronal (Y={y})\nZ={z}\nX={x}")
     
     # sagittal view
     sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
     sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
 
     # update the line positions
-    axial_h_line.data = np.array([[y, 0], [y, axial_slice.shape[1]]])
-    axial_v_line.data = np.array([[0, x], [axial_slice.shape[0], x]])
+    axial_h_line.data = np.array([[0, y], [axial_slice.shape[0], y]])
+    axial_v_line.data = np.array([[x, 0], [x, axial_slice.shape[1]]])
 
     coronal_h_line.data = np.array([[z, 0], [z, coronal_slice.shape[1]]])
     coronal_v_line.data = np.array([[0, x], [coronal_slice.shape[0], x]])
@@ -488,3 +571,4 @@ def on_close(event):
 viewer.window._qt_window.closeEvent = on_close
 
 napari.run()
+

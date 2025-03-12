@@ -17,8 +17,9 @@ from PIL import Image, ImageDraw, ImageFont
 import queue
 
 import nibabel as nib
-from qtpy.QtCore import QPoint
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout
+from qtpy.QtCore import QPoint, QTimer
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar
+
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
@@ -244,7 +245,7 @@ dimensions = header.get_data_shape()
 print(dimensions)
 # voxel dimensions (in mm)
 voxel_sizes = header.get_zooms()    
-print(voxel_sizes) 
+print(f'voxel_dimensions:{voxel_sizes}') 
 
 # read the image data
 reader = napari_get_reader(filepath)
@@ -264,6 +265,14 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add 3D image layer (hidden)
 viewer = Viewer()
+# for toolbar in viewer.window._qt_window.findChildren(QToolBar):
+#     print(toolbar.objectName())
+#     if toolbar.objectName() in ["3D Volume", "Transpose"]:
+#         toolbar.setVisible(False)
+QTimer.singleShot(100, lambda: [
+    print("Found toolbars:", [tb.objectName() for tb in viewer.window._qt_window.findChildren(QToolBar)]),
+    [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar) if tb.objectName() in ["3D Volume", "Transpose"]]
+])
 viewer.window._qt_window.showFullScreen() # full screen
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
@@ -338,7 +347,7 @@ def sync_sliders(event):
     # y_slider.setValue(viewer.dims.current_step[1])
     # x_slider.setValue(viewer.dims.current_step[2])
     current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
-    current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1)
+    current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1) 
     current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
 
 # add a button to the slider container
@@ -416,18 +425,18 @@ def create_line_layer(color, line_data, layer, name, visible):
 # create line layers for each view
 axial_h_line_data = np.array([[0, initial_y], [axial_slice.shape[0], initial_y]])
 axial_v_line_data = np.array([[initial_x, 0], [initial_x, axial_slice.shape[1]]])
-axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial_line1', visible=True)  
-axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial_line2', visible=True)  
+axial_h_line = create_line_layer('yellow', axial_h_line_data, axial_layer, 'axial line1', visible=True)  
+axial_v_line = create_line_layer('skyblue', axial_v_line_data, axial_layer, 'axial line2', visible=True)  
 
 coronal_h_line_data = np.array([[initial_z, 0], [initial_z, coronal_slice.shape[1]]])
 coronal_v_line_data = np.array([[0, initial_x], [coronal_slice.shape[0], initial_x]])
-coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal_line1', visible=False)  
-coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal_line2', visible=False)
+coronal_h_line = create_line_layer('tomato', coronal_h_line_data, coronal_layer, 'coronal line1', visible=False)  
+coronal_v_line = create_line_layer('skyblue', coronal_v_line_data, coronal_layer, 'coronal line2', visible=False)
 
 sagittal_h_line_data = np.array([[initial_z, 0], [initial_z, sagittal_slice.shape[1]]])
 sagittal_v_line_data = np.array([[0, initial_y], [sagittal_slice.shape[0], initial_y]])
-sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal_line1', visible=True) 
-sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'saagittal_line2', visible=True)
+sagittal_h_line = create_line_layer('tomato', sagittal_h_line_data, sagittal_layer, 'sagittal line1', visible=True) 
+sagittal_v_line = create_line_layer('yellow', sagittal_v_line_data, sagittal_layer, 'sagittal line2', visible=True)
 
 
 def update_slices(event):
