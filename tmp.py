@@ -212,13 +212,16 @@ class ScreenRecorder:
             if self.audio_frames:
                 audio_data = np.concatenate(self.audio_frames)
                 write_wav(self.audio_filename, self.fs, audio_data)
+                # # merge the audio and video
+                # self._merge_audio_video()
+                # os.remove(self.audio_filename) 
 
 
 # initialize the screen recorder
 recorder = ScreenRecorder()
 
 # set the file path
-filepath = "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz"
+filepath = "D:/projects/spingpt/data/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
 image_name = os.path.splitext(os.path.basename(filepath))[0]
 recorder.image_name = image_name  # set the image name
 
@@ -356,6 +359,15 @@ def sync_sliders(event):
     current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
     current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1) 
     current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
+
+# add a button to the slider container
+coronal_btn = QPushButton("Toggle Coronal View")
+def toggle_coronal():
+    coronal_btn.setText("Hide Coronal" if coronal_layer.visible else "Show Coronal")
+coronal_btn.clicked.connect(toggle_coronal)
+
+# add the button to the layout
+main_layout.insertWidget(1, coronal_btn)  # add the button below the slider
 
 # add the whole container to the dock 
 axis_controls_dock = viewer.window.add_dock_widget(
@@ -535,6 +547,9 @@ def toggle_recording(viewer):
         recorder.stop_recording()
         print("stop recording")
 
+
+# auto start the recording (if you want to start recording automatically, uncomment the following code)
+# viewer.window._qt_window.showEvent = lambda event: recorder.start_recording(viewer)
 
 # automatically stop recording when the window is closed
 def on_close(event):
