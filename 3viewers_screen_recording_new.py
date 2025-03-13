@@ -18,7 +18,7 @@ import queue
 
 import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer, Qt
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy
 
 
 import sounddevice as sd 
@@ -225,7 +225,16 @@ class ScreenRecorder:
 recorder = ScreenRecorder()
 
 # set the file path
-filepath = "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz"
+IMAGE_LIST = [
+    "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz",
+    "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz",
+    "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz",
+    "D:/projects/spingpt/data/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz",
+]
+current_image_idx = 0 
+
+
+filepath = IMAGE_LIST[current_image_idx]
 image_name = os.path.splitext(os.path.basename(filepath))[0]
 recorder.image_name = image_name  # set the image name
 
@@ -262,7 +271,8 @@ QTimer.singleShot(100, lambda: [
     [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
     viewer.window._qt_window.menuBar().setVisible(False),
     viewer.window._qt_window.statusBar().setVisible(False),
-    [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton)],
+    [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
+     if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn"]],  # 过滤保留的按钮
 ])
 # buttons = viewer.window._qt_window.findChildren(QPushButton)
 # print("\n[Visible Buttons]")
@@ -275,7 +285,10 @@ image_layer = viewer.add_image(image_array, **metadata, visible=False)
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 
 slider_container = QWidget()
-main_layout = QVBoxLayout()  
+slider_container.setMinimumWidth(300)  # 设置最小宽度
+slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # 允许水平扩展
+main_layout = QVBoxLayout()
+main_layout.setContentsMargins(10, 5, 10, 5)  # 添加布局边距
 slider_layout = QVBoxLayout()
 
 x_container = QWidget()
@@ -285,12 +298,13 @@ x_slider.setOrientation(1)
 x_slider.setMinimum(0)
 x_slider.setMaximum(image_array.shape[2]-1)
 x_slider.setValue(image_array.shape[2] // 2)
-x_label = QLabel(f"X: {x_slider.value()}")
+max_x = image_array.shape[2]-1
+x_label = QLabel(f"X: {x_slider.value()}/{max_x}")
 def update_x(value):
     current_step = list(viewer.dims.current_step)
     current_step[2] = value
     viewer.dims.current_step = tuple(current_step)
-    x_label.setText(f"X: {value}") 
+    x_label.setText(f"X: {value}/{max_x}")
 x_slider.valueChanged.connect(update_x)
 x_layout.addWidget(x_slider)
 x_layout.addWidget(x_label)
@@ -303,12 +317,13 @@ y_slider.setOrientation(1)
 y_slider.setMinimum(0)
 y_slider.setMaximum(image_array.shape[1]-1)
 y_slider.setValue(image_array.shape[1] // 2)
-y_label = QLabel(f"Y: {y_slider.value()}")  
+max_y = image_array.shape[1]-1  
+y_label = QLabel(f"Y: {y_slider.value()}/{max_y}")
 def update_y(value):
     current_step = list(viewer.dims.current_step)
     current_step[1] = value
     viewer.dims.current_step = tuple(current_step)
-    y_label.setText(f"Y: {value}")  
+    y_label.setText(f"Y: {value}/{max_y}") 
 y_slider.valueChanged.connect(update_y)
 y_layout.addWidget(y_slider)
 y_layout.addWidget(y_label)
@@ -321,12 +336,13 @@ z_slider.setOrientation(1)
 z_slider.setMinimum(0)
 z_slider.setMaximum(image_array.shape[0]-1)
 z_slider.setValue(image_array.shape[0] // 2)
-z_label = QLabel(f"Z: {z_slider.value()}")  
+max_z = image_array.shape[0]-1 
+z_label = QLabel(f"Z: {z_slider.value()}/{max_z}")
 def update_z(value):
     current_step = list(viewer.dims.current_step)
     current_step[0] = value
     viewer.dims.current_step = tuple(current_step)
-    z_label.setText(f"Z: {value}")  
+    z_label.setText(f"Z: {value}/{max_z}")
 z_slider.valueChanged.connect(update_z)
 z_layout.addWidget(z_slider)
 z_layout.addWidget(z_label)
@@ -340,13 +356,62 @@ slider_layout.addWidget(z_container)
 status_label = QLabel("Recording status: Not recording")
 status_label.setStyleSheet("color: green;")  
 status_label.setAlignment(Qt.AlignCenter)
+image_name_label = QLabel("Current Image: ")
+image_name_label.setAlignment(Qt.AlignCenter)
+image_name_label.setWordWrap(True)  # 新增自动换行功能
+image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # 添加边距
 main_layout.addWidget(status_label)
+main_layout.addWidget(image_name_label)
+
+# create button for loading images
+nav_buttons_layout = QHBoxLayout()
+prev_btn = QPushButton("Previous")
+prev_btn.setObjectName("nav_prev_btn") 
+next_btn = QPushButton("Next")
+next_btn.setObjectName("nav_next_btn") 
+nav_buttons_layout.addWidget(prev_btn)
+nav_buttons_layout.addWidget(next_btn)
+
+def load_image(idx):
+    global image_array, metadata, image_layer, dimensions, voxel_sizes
+    filepath = IMAGE_LIST[idx]
+    img = nib.load(filepath)
+    image_name = os.path.splitext(os.path.basename(filepath))[0]
+    recorder.image_name = image_name
+    image_name_label.setText(f"Current Image: {image_name}")
+    
+    layer_data = napari_get_reader(filepath)(filepath)
+    image_array = layer_data[0][0]
+    metadata = layer_data[0][1]
+    
+    image_layer.data = image_array
+    image_layer.refresh()
+    
+    x_slider.setMaximum(image_array.shape[2]-1)
+    y_slider.setMaximum(image_array.shape[1]-1)
+    z_slider.setMaximum(image_array.shape[0]-1)
+
+def prev_image():
+    global current_image_idx
+    if current_image_idx > 0:
+        current_image_idx -= 1
+        load_image(current_image_idx)
+
+def next_image():
+    global current_image_idx
+    if current_image_idx < len(IMAGE_LIST)-1:
+        current_image_idx += 1
+        load_image(current_image_idx)
+
+prev_btn.clicked.connect(prev_image)
+next_btn.clicked.connect(next_image)
 
 # create input box
 input_layout = QHBoxLayout()
 annotation_input = QLineEdit()
 annotation_input.setPlaceholderText("Input...")
 submit_btn = QPushButton("Submit")
+submit_btn.setObjectName("submit_btn") 
 input_layout.addWidget(annotation_input)
 input_layout.addWidget(submit_btn)
 
@@ -361,6 +426,7 @@ annotation_input.returnPressed.connect(submit_btn.click)
 
 # add the slider and input box to the main layout
 main_layout.addLayout(slider_layout)  # add the slider first
+main_layout.addLayout(nav_buttons_layout) # add the navigation buttons
 main_layout.addLayout(input_layout)   # then add the input box
 slider_container.setLayout(main_layout)  # set the main layout to the container
 
