@@ -17,12 +17,14 @@ from PIL import Image, ImageDraw, ImageFont
 import queue
 
 import nibabel as nib
-from qtpy.QtCore import QPoint, QTimer
+from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel
 
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
+
+import cv2
 
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
@@ -122,9 +124,13 @@ class ScreenRecorder:
             f.write(f"\n[Video Recording Started] {timestamp_start}\n")
         
         # get the napari window coordinates
+        # win = viewer.window._qt_window
+        # win.moveEvent = lambda event: self._update_region(win)  # update the region when the window moves
+        # self._update_region(win)
         win = viewer.window._qt_window
-        win.moveEvent = lambda event: self._update_region(win)  # update the region when the window moves
+        time.sleep(0.5)  # 添加延迟确保窗口完成布局
         self._update_region(win)
+        win.moveEvent = lambda event: self._update_region(win)
         
         # intialize the video writer
         self.writer = get_writer(self.video_path, format='FFMPEG', fps=FPS)
@@ -157,12 +163,13 @@ class ScreenRecorder:
 
     def _update_region(self, window):
         # update the napari window coordinates
-        geo = window.geometry()
+        # geo = window.geometry()
+        geo = window.frameGeometry() 
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width(),
-            "height": geo.height()
+            "width": geo.width()+1300,
+            "height": geo.height()+900
         }
 
     def _capture_loop(self):
@@ -173,7 +180,7 @@ class ScreenRecorder:
                     # capture the screen region
                     img = np.array(sct.grab(self.monitor))
                     # transfrom to RGB format
-                    img = img[..., :3]
+                    img = cv2.cvtColor(img[..., :3], cv2.COLOR_BGR2RGB)
 
                     # draw the text on the image
                     if not self.text_queue.empty():
@@ -328,6 +335,12 @@ z_container.setLayout(z_layout)
 slider_layout.addWidget(x_container) 
 slider_layout.addWidget(y_container)
 slider_layout.addWidget(z_container)
+
+# create the recording mode annotation
+status_label = QLabel("Recording status: Not recording")
+status_label.setStyleSheet("color: green;")  
+status_label.setAlignment(Qt.AlignCenter)
+main_layout.addWidget(status_label)
 
 # create input box
 input_layout = QHBoxLayout()
@@ -526,12 +539,17 @@ points_layer.events.data.connect(on_points_changed)
 # set the recording callback
 @viewer.bind_key('R')  # press 'R' to start/stop recording
 def toggle_recording(viewer):
+    global status_label
     if not recorder.is_recording:
         recorder.start_recording(viewer)
-        print("start recording...")
+        status_label.setText("Recording status: recording...")
+        status_label.setStyleSheet("color: red;")  
+        print("Start recording...")
     else:
         recorder.stop_recording()
-        print("stop recording")
+        status_label.setText("Recording status: Not recording")
+        status_label.setStyleSheet("color: green;")  
+        print("Stop recording...")
 
 
 # automatically stop recording when the window is closed
