@@ -379,7 +379,7 @@ slider_container.setStyleSheet("""
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=1))
+axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
 coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
 sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
 print('axial_slice:', axial_slice.shape)
@@ -409,14 +409,14 @@ def add_text_to_slice(slice_data, text):
 
 # Set grid layout
 axial_layer = viewer.layers['Axial'] # get the target layer
-axial_layer.translate = (-145, -150)  # move the layer to the specified position
-axial_layer.scale = [0.38, 0.38] 
+axial_layer.translate = (-50, -100)  # move the layer to the specified position
+axial_layer.scale = [0.4, 0.4] 
 sagittal_layer = viewer.layers['Sagittal'] 
-sagittal_layer.translate = (-145, -60)  
-sagittal_layer.scale = [0.38, 0.38] 
+sagittal_layer.translate = (-20, -60)  
+sagittal_layer.scale = [0.2, 0.2] 
 coronal_layer = viewer.layers['Coronal'] 
-coronal_layer.translate = (-60, 5) 
-coronal_layer.scale = [0.18, 0.18] 
+coronal_layer.translate = (-110, 90) 
+coronal_layer.scale = [0.4, 0.4] 
 
 # Create line layer
 def create_line_layer(color, line_data, layer, name, visible):
@@ -440,15 +440,13 @@ def update_slices(event):
     x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
     
     # axial view (rotate 90 degrees counterclockwise)
-    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=1))
-    axial_slice = add_text_to_slice(axial_slice, f"Axial (Z={z})\nY={y}\nX={x}")
+    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
     
     # coronal view (rotate 180 degrees counterclockwise)
     coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
     
     # sagittal view
     sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
-    sagittal_slice = add_text_to_slice(sagittal_slice, f"Sagittal (X={x})\nZ={z}\nY={y}")
     
     # update the layer data
     axial_layer.data = axial_slice
