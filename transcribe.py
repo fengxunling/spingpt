@@ -41,5 +41,13 @@ def transcribe_video(input_path, output_txt_path="transcription_en.txt"):
     
 
 if __name__ == "__main__":
-    file_path = os.path.dirname(__file__)+'/record_materials/'
-    transcribe_audio("test.wav", "output_audio.txt")
+    input_dir = os.path.join(os.path.dirname(__file__), 'recorded_materials')
+    output_dir = input_dir 
+    
+    for filename in os.listdir(input_dir):
+        if filename.endswith('.wav'):
+            input_path = os.path.join(input_dir, filename)
+            base_name = os.path.splitext(filename)[0]
+            output_path = os.path.join(output_dir, f"{base_name}.txt")
+            
+            transcribe_audio(input_path, output_path)

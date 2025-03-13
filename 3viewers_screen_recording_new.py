@@ -128,7 +128,7 @@ class ScreenRecorder:
         # win.moveEvent = lambda event: self._update_region(win)  # update the region when the window moves
         # self._update_region(win)
         win = viewer.window._qt_window
-        time.sleep(0.5)  # 添加延迟确保窗口完成布局
+        time.sleep(0.5)  # add delay
         self._update_region(win)
         win.moveEvent = lambda event: self._update_region(win)
         
@@ -285,10 +285,10 @@ image_layer = viewer.add_image(image_array, **metadata, visible=False)
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 
 slider_container = QWidget()
-slider_container.setMinimumWidth(300)  # 设置最小宽度
-slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # 允许水平扩展
+slider_container.setMinimumWidth(300)  # set minimum width
+slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # allow horizontal expansion
 main_layout = QVBoxLayout()
-main_layout.setContentsMargins(10, 5, 10, 5)  # 添加布局边距
+main_layout.setContentsMargins(10, 5, 10, 5)  # add margin
 slider_layout = QVBoxLayout()
 
 x_container = QWidget()
@@ -358,8 +358,8 @@ status_label.setStyleSheet("color: green;")
 status_label.setAlignment(Qt.AlignCenter)
 image_name_label = QLabel("Current Image: ")
 image_name_label.setAlignment(Qt.AlignCenter)
-image_name_label.setWordWrap(True)  # 新增自动换行功能
-image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # 添加边距
+image_name_label.setWordWrap(True)  # add auto wrap
+image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # add margin
 main_layout.addWidget(status_label)
 main_layout.addWidget(image_name_label)
 
