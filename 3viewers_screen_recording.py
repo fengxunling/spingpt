@@ -176,17 +176,6 @@ def create_line_layer(color, line_data, layer, name, visible):
         visible=visible
     )
 
-shapes_layer = viewer.add_shapes(
-    name='add rectangle',
-    shape_type='rectangle',
-    edge_color=RECTANGLE_COLOR,
-    edge_width=RECTANGLE_WIDTH,
-    face_color='lime',
-    ndim=2
-)
-viewer.layers.move(len(viewer.layers)-1, 0)  # 将新建的形状层移动到最顶层
-# 绑定形状图层事件
-shapes_layer.events.data.connect(on_shape_added)
     
 
 # Connect dimension updates
@@ -222,22 +211,30 @@ def toggle_recording(viewer):
 
 @viewer.bind_key('B')
 def toggle_rectangle_mode(viewer):
-    """切换矩形标注模式"""
+    global shapes_layer
+    if not hasattr(viewer, 'shapes_layer') or viewer.layers.get('add rectangle') is None:
+        shapes_layer = viewer.add_shapes(
+            name='add rectangle',
+            shape_type='rectangle',
+            edge_color=RECTANGLE_COLOR,
+            edge_width=RECTANGLE_WIDTH,
+            face_color='lime',
+            ndim=2
+        )
+        viewer.layers.move(len(viewer.layers)-1, 0)
+        shapes_layer.events.data.connect(on_shape_added)
+
+    # 仅允许形状层交互
+    for layer in viewer.layers:
+        # if layer != shapes_layer:
+        layer.mouse_pan = False
+        layer.mouse_zoom = False
+    
+    # 设置形状层参数
     shapes_layer.mode = 'add_rectangle'
     
-    # 强制将标注层置顶
+    # 确保形状层置顶
     viewer.layers.move(viewer.layers.index(shapes_layer), 0)
-    
-    # 仅禁用图像层交互，保持形状层交互
-    for layer in viewer.layers:
-        if isinstance(layer, napari.layers.Image):
-            layer.mouse_pan = False
-            layer.mouse_zoom = False
-    
-    # 确保形状层参数正确
-    viewer.layers.move(viewer.layers.index(shapes_layer), 0)  # 新增：二次确认位置
-    shapes_layer.mouse_pan = True
-    shapes_layer.mouse_zoom = True
     shapes_layer.face_color = [0,0,0,0]
     
     viewer3d.get_status_label().setText("模式: 矩形标注")
