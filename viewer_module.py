@@ -135,7 +135,30 @@ class ViewerUI:
 
     def _setup_ortho_views(self):
         """Initialize orthogonal views"""
-        # [保留原有tmp.py中创建正交视图层的完整代码]
+        # Get initial slice positions
+        initial_z, initial_y, initial_x = self.viewer.dims.current_step
+
+        # Add orthogonal 2D slice layers
+        axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
+        coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
+        sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
+        # print('axial_slice:', axial_slice.shape)
+        # print('coronal_slice:', coronal_slice.shape)
+        # print('sagittal_slice:', sagittal_slice.shape)
+        self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
+        self.coronal_layer = self.viewer.add_image(coronal_slice, name='Coronal', visible=False)
+        self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
+
+        # Set grid layout
+        self.axial_layer = self.viewer.layers['Axial'] # get the target layer
+        self.axial_layer.translate = (-50, -100)  # move the layer to the specified position
+        self.axial_layer.scale = [0.4, 0.4] 
+        self.sagittal_layer = self.viewer.layers['Sagittal'] 
+        self.sagittal_layer.translate = (-20, -60)  
+        self.sagittal_layer.scale = [0.2, 0.2] 
+        self.coronal_layer = self.viewer.layers['Coronal'] 
+        self.coronal_layer.translate = (-110, 90) 
+        self.coronal_layer.scale = [0.4, 0.4] 
 
     def _connect_events(self):
         """Connect event handlers"""
@@ -144,11 +167,82 @@ class ViewerUI:
 
     def _update_slices(self, event):
         """Slice update logic"""
-        # [保留原有tmp.py中update_slices的完整代码]
+        # z, y, x = viewer.dims.current_step
+        z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) # add bounder check
+        y = np.clip(self.viewer.dims.current_step[1], 0, self.image_array.shape[1]-1)
+        x = np.clip(self.viewer.dims.current_step[2], 0, self.image_array.shape[2]-1)
+        
+        # axial view (rotate 90 degrees counterclockwise)
+        axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
+        
+        # coronal view (rotate 180 degrees counterclockwise)
+        coronal_slice = np.fliplr(np.rot90(self.image_array[:, y, :], k=2))
+        
+        # sagittal view
+        sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
+        
+        # update the layer data
+        self.axial_layer.data = axial_slice
+        self.coronal_layer.data = coronal_slice
+        self.sagittal_layer.data = sagittal_slice
+
+        self.axial_layer.data = axial_slice 
+        self.coronal_layer.data = coronal_slice
+        self.sagittal_layer.data = sagittal_slice
+        
+        # refresh the display
+        self.axial_layer.refresh()  
+        self.coronal_layer.refresh()
+        self.sagittal_layer.refresh()
+
+        # according to the current slice update the visibility of the points
+        if len(self.points_layer.data) > 0:
+            current_z, current_y, current_x = self.viewer.dims.current_step
+            visible = []
+            for point in self.points_layer.data:
+                p_z = int(round(point[0]))
+                p_y = int(round(point[1]))
+                p_x = int(round(point[2]))
+                # check if on any of the current slice planes
+                if p_z == current_z or p_y == current_y or p_x == current_x:
+                    visible.append(True)
+                else:
+                    visible.append(False)
+            self.points_layer.visible = visible
+            self.points_layer.refresh()  # refresh the point layer display
 
     def _on_points_changed(self, event):
         """Points layer change handler"""
-        # [保留原有tmp.py中on_points_changed的完整代码]
+        global previous_length
+        current_data = self.points_layer.data
+        current_length = len(current_data)
+        
+        if current_length > previous_length:
+            new_points = current_data[previous_length:current_length]
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            
+            current_step = viewer.dims.current_step
+            spacing = image_layer.scale
+            translate = image_layer.translate
+            
+            log_info = []
+            for pt in new_points:
+                physical_coord = np.array(pt) * spacing + translate
+                log_entry = (
+                    f"time: {timestamp}\n"
+                    f"spatial coordinates: {physical_coord}\n"
+                    # f"volumes coordinates: {pt}\n"
+                    f"current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
+                    "------------------------\n"
+                )
+                log_info.append(log_entry)
+                print(log_entry.strip())
+            
+            if recorder.is_recording:
+                with open(recorder.log_path, "a") as f:
+                    f.writelines(log_info)
+            
+            previous_length = current_length
 
     def get_viewer(self):
         return self.viewer

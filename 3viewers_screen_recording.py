@@ -85,18 +85,12 @@ metadata = layer_data[0][1]
 
 # Create Viewer and add image layer (hidden)
 viewer3d = ViewerUI(image_array, metadata, filepath)
+def update_slices(event):
+    viewer3d._update_slices(event)
+def on_points_changed(event):
+    viewered._on_points_changed(event)
 viewer = viewer3d.get_viewer()
 points_layer = viewer3d.get_points_layer()
-
-shapes_layer = viewer.add_shapes(
-    name='add rectangle',
-    shape_type='rectangle',
-    edge_color=RECTANGLE_COLOR,
-    edge_width=RECTANGLE_WIDTH,
-    face_color='lime',
-    ndim=2
-)
-viewer.layers.move(len(viewer.layers)-1, 0)  # 将新建的形状层移动到最顶层
 
 def on_shape_added(event):
     """处理形状添加事件"""
@@ -106,7 +100,7 @@ def on_shape_added(event):
         
         # 弹出文本输入框
         text, ok = QInputDialog.getText(
-            None, '标注输入', '请输入标注内容:',
+            None, 'input', 'please add:',
             QLineEdit.Normal, ''
         )
         
@@ -117,10 +111,10 @@ def on_shape_added(event):
             # 记录日志
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             log_entry = (
-                f"[区域标注] {timestamp}\n"
-                f"坐标范围: {rect.tolist()}\n"
-                f"物理坐标: {physical_coord}\n"
-                f"内容: {text}\n"
+                f"[region timestamp] {timestamp}\n"
+                f"range: {rect.tolist()}\n"
+                f"coordinate: {physical_coord}\n"
+                f"content: {text}\n"
                 "------------------------\n"
             )
             
@@ -133,8 +127,7 @@ def on_shape_added(event):
             axial_layer.data = axial_slice
             axial_layer.refresh()
 
-# 绑定形状图层事件
-shapes_layer.events.data.connect(on_shape_added)
+
 
 viewer.window._qt_window.showFullScreen() # full screen
 QTimer.singleShot(100, lambda: [
@@ -150,51 +143,25 @@ QTimer.singleShot(100, lambda: [
 #     if btn.isVisible():
 #         print(f"{btn.objectName()} | {btn.text()} | {btn.toolTip()}")
 
-image_layer = viewer.add_image(image_array, **metadata, visible=False)
 
 
-# Get initial slice positions
-initial_z, initial_y, initial_x = viewer.dims.current_step
+# # add text color definition at the beginning of the file
+# TEXT_COLOR_WHITE = 1000  # white text
+# VIEWER_TEXT_POSITION = (10, 10) # coordinates of the text
 
-# Add orthogonal 2D slice layers
-axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
-coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
-sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
-print('axial_slice:', axial_slice.shape)
-print('coronal_slice:', coronal_slice.shape)
-print('sagittal_slice:', sagittal_slice.shape)
-axial_layer = viewer.add_image(axial_slice, name='Axial')
-coronal_layer = viewer.add_image(coronal_slice, name='Coronal', visible=False)
-sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
+# # add font initialization at the beginning of the file
+# viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
 
+# def add_text_to_slice(slice_data, text):
+#     """add text annotation to the slice"""
+#     pil_img = Image.fromarray(slice_data)
+#     draw = ImageDraw.Draw(pil_img)
+#     draw.text(VIEWER_TEXT_POSITION, 
+#              text,
+#              fill=TEXT_COLOR_WHITE, 
+#              font=viewer_font)
+#     return np.array(pil_img)
 
-# add text color definition at the beginning of the file
-TEXT_COLOR_WHITE = 1000  # white text
-VIEWER_TEXT_POSITION = (10, 10) # coordinates of the text
-
-# add font initialization at the beginning of the file
-viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
-
-def add_text_to_slice(slice_data, text):
-    """add text annotation to the slice"""
-    pil_img = Image.fromarray(slice_data)
-    draw = ImageDraw.Draw(pil_img)
-    draw.text(VIEWER_TEXT_POSITION, 
-             text,
-             fill=TEXT_COLOR_WHITE, 
-             font=viewer_font)
-    return np.array(pil_img)
-
-# Set grid layout
-axial_layer = viewer.layers['Axial'] # get the target layer
-axial_layer.translate = (-50, -100)  # move the layer to the specified position
-axial_layer.scale = [0.4, 0.4] 
-sagittal_layer = viewer.layers['Sagittal'] 
-sagittal_layer.translate = (-20, -60)  
-sagittal_layer.scale = [0.2, 0.2] 
-coronal_layer = viewer.layers['Coronal'] 
-coronal_layer.translate = (-110, 90) 
-coronal_layer.scale = [0.4, 0.4] 
 
 # Create line layer
 def create_line_layer(color, line_data, layer, name, visible):
@@ -209,49 +176,18 @@ def create_line_layer(color, line_data, layer, name, visible):
         visible=visible
     )
 
-
-def update_slices(event):
-    """Update the slices with rotation and text annotation"""
-    # z, y, x = viewer.dims.current_step
-    z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
-    y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1)
-    x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
+shapes_layer = viewer.add_shapes(
+    name='add rectangle',
+    shape_type='rectangle',
+    edge_color=RECTANGLE_COLOR,
+    edge_width=RECTANGLE_WIDTH,
+    face_color='lime',
+    ndim=2
+)
+viewer.layers.move(len(viewer.layers)-1, 0)  # 将新建的形状层移动到最顶层
+# 绑定形状图层事件
+shapes_layer.events.data.connect(on_shape_added)
     
-    # axial view (rotate 90 degrees counterclockwise)
-    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
-    
-    # coronal view (rotate 180 degrees counterclockwise)
-    coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
-    
-    # sagittal view
-    sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
-    
-    # update the layer data
-    axial_layer.data = axial_slice
-    coronal_layer.data = coronal_slice
-    sagittal_layer.data = sagittal_slice
-    
-    # refresh the display
-    axial_layer.refresh()
-    coronal_layer.refresh()
-    sagittal_layer.refresh()
-
-    # according to the current slice update the visibility of the points
-    if len(points_layer.data) > 0:
-        current_z, current_y, current_x = viewer.dims.current_step
-        visible = []
-        for point in points_layer.data:
-            p_z = int(round(point[0]))
-            p_y = int(round(point[1]))
-            p_x = int(round(point[2]))
-            # check if on any of the current slice planes
-            if p_z == current_z or p_y == current_y or p_x == current_x:
-                visible.append(True)
-            else:
-                visible.append(False)
-        points_layer.visible = visible
-        points_layer.refresh()  # refresh the point layer display
-
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)
@@ -267,41 +203,9 @@ points_layer = viewer.add_points(
 # logics for recording the points
 previous_length = 0
 
-def on_points_changed(event):
-    global previous_length
-    current_data = points_layer.data
-    current_length = len(current_data)
-    
-    if current_length > previous_length:
-        new_points = current_data[previous_length:current_length]
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        
-        current_step = viewer.dims.current_step
-        spacing = image_layer.scale
-        translate = image_layer.translate
-        
-        log_info = []
-        for pt in new_points:
-            physical_coord = np.array(pt) * spacing + translate
-            log_entry = (
-                f"time: {timestamp}\n"
-                f"spatial coordinates: {physical_coord}\n"
-                # f"volumes coordinates: {pt}\n"
-                f"current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
-                "------------------------\n"
-            )
-            log_info.append(log_entry)
-            print(log_entry.strip())
-        
-        if recorder.is_recording:
-            with open(recorder.log_path, "a") as f:
-                f.writelines(log_info)
-        
-        previous_length = current_length
-
 points_layer.events.data.connect(on_points_changed)
 
-# set the recording callback
+# ================= bind with key ======================
 @viewer.bind_key('R')  # press 'R' to start/stop recording
 def toggle_recording(viewer):
     global status_label
