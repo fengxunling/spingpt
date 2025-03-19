@@ -19,7 +19,7 @@ import queue
 import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy
-
+from recorder import ScreenRecorder
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
@@ -28,199 +28,24 @@ import cv2
 
 # set the parameters
 RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
-VIDEO_PATH = RECORD_PATH+"operation_recording.mp4"  # video file path
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
-class ScreenRecorder:
-    def __init__(self):
-        self.is_recording = False
-        self.writer = None
-        self.monitor = None
-        self.capture_thread = None
-        self.audio_thread = None
-        self.audio_frames = []
-        self.fs = 44100  # sampling rate for the audio
-        self.audio_filename = None
+FONT_PATH = "arial.ttf"  # font file path
+FONT_SIZE = 30
+TEXT_COLOR = 255  
+TEXT_POSITION = (10, 10)  # text position
+MAX_TEXT_DURATION = 5  # seconds of text duration
 
-        self.start_time = None
-        self.end_time = None
-        self.text_queue = queue.Queue()  # (thread-safe text queue)
-        self.lock = threading.Lock()
-
-        # add dynamic path for the image and video
-        self.image_name = None
-        self.video_path = None
-        self.log_path = None
-    
-    def add_annotation(self, text):
-        """Add text annotation"""
-        timestamp = datetime.now()
-        with self.lock:
-            self.text_queue.put({
-                "text": text,
-                "timestamp": timestamp,
-                "expire_time": timestamp.timestamp() + MAX_TEXT_DURATION
-            })
-        
-        # write the annotation to the log
-        if self.is_recording:
-            log_entry = (
-                f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
-                f"Content: {text}\n"
-                "------------------------\n"
-            )
-            with open(self.log_path, "a") as f:
-                f.write(log_entry)
-    
-    def _draw_text(self, img_np):
-        """Draw text on the image"""
-        current_time = time.time()
-        
-        # transfer the numpy array to PIL image
-        pil_img = Image.fromarray(img_np)
-        draw = ImageDraw.Draw(pil_img)
-        
-        # deal with all text annotations
-        temp_queue = queue.Queue()
-        while not self.text_queue.empty():
-            annotation = self.text_queue.get()
-            if current_time < annotation["expire_time"]:
-                draw.text(TEXT_POSITION, 
-                         f"{annotation['text']} ({annotation['timestamp'].strftime('%H:%M:%S')})",
-                         fill=TEXT_COLOR, 
-                         font=self.font)
-                temp_queue.put(annotation)
-        
-        # update the text queue
-        with self.lock:
-            while not temp_queue.empty():
-                self.text_queue.put(temp_queue.get())
-        
-        return np.array(pil_img)
-
-
-    def start_recording(self, viewer):
-        # auto detect the recording region and start recording
-        self.is_recording = True
-        self.start_time = datetime.now()
-
-        # generate the file name
-        timestamp_str = self.start_time.strftime("%Y%m%d_%H%M_%S")
-        base_name = f"{timestamp_str}_{self.image_name}"
-        self.video_path = os.path.join(RECORD_PATH, f"{base_name}.mp4")
-        self.log_path = os.path.join(RECORD_PATH, f"{base_name}_log.txt")
-
-        # write the start time to the log
-        timestamp_start = self.start_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        with open(self.log_path, "a") as f:
-            f.write(f"\n[Video Recording Started] {timestamp_start}\n")
-        
-        # get the napari window coordinates
-        # win = viewer.window._qt_window
-        # win.moveEvent = lambda event: self._update_region(win)  # update the region when the window moves
-        # self._update_region(win)
-        win = viewer.window._qt_window
-        time.sleep(0.5)  # 添加延迟确保窗口完成布局
-        self._update_region(win)
-        win.moveEvent = lambda event: self._update_region(win)
-        
-        # intialize the video writer
-        self.writer = get_writer(self.video_path, format='FFMPEG', fps=FPS)
-        
-        # start the screen capture thread
-        self.capture_thread = threading.Thread(target=self._capture_loop)
-        self.capture_thread.start()
-
-        # initialize the audio recording
-        self.audio_filename = os.path.join(RECORD_PATH, f"{base_name}_temp.wav")
-        self.audio_frames = []
-        self.audio_thread = threading.Thread(target=self._record_audio)
-        self.audio_thread.start()
-
-    def _record_audio(self):
-        """audio recording thread"""
-        try:
-            with sd.InputStream(samplerate=self.fs, channels=2, callback=self._audio_callback):
-                while self.is_recording:
-                    time.sleep(0.1)
-        except Exception as e:
-            print(f"Audio recording error: {str(e)}")
-
-    def _audio_callback(self, indata, frames, time, status):
-        """audio callback function"""
-        if status:
-            print(status)
-        self.audio_frames.append(indata.copy())
-
-
-    def _update_region(self, window):
-        # update the napari window coordinates
-        # geo = window.geometry()
-        geo = window.frameGeometry() 
-        self.monitor = {
-            "left": geo.x(),
-            "top": geo.y(),
-            "width": geo.width()+1300,
-            "height": geo.height()+900
-        }
-
-    def _capture_loop(self):
-        # get the screen capture object
-        with mss() as sct:
-            while self.is_recording:
-                try:
-                    # capture the screen region
-                    img = np.array(sct.grab(self.monitor))
-                    # transfrom to RGB format
-                    img = cv2.cvtColor(img[..., :3], cv2.COLOR_BGR2RGB)
-
-                    # draw the text on the image
-                    if not self.text_queue.empty():
-                        img = self._draw_text(img)
-
-                    # write the video frame
-                    self.writer.append_data(img)
-                    time.sleep(1/FPS)
-                except Exception as e:
-                    print(f"capture error: {str(e)}")
-                    break
-
-    def stop_recording(self):
-        # stop the recording
-        self.is_recording = False
-        self.end_time = datetime.now()
-
-        # write the end time to the log
-        timestamp_end = self.end_time.strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-        duration = self.end_time - self.start_time
-        with open(self.log_path, "a") as f:
-            f.write(
-                f"[Video Recording Ended] {timestamp_end}\n"
-                f"[Duration] {duration.total_seconds():.2f} seconds\n\n"
-            )
-
-        if self.capture_thread:
-            self.capture_thread.join()
-        if self.writer:
-            self.writer.close()
-        print(f"The video is saved at: {os.path.abspath(VIDEO_PATH)}")
-
-        # stop audio recording and save
-        if self.audio_thread:
-            self.audio_thread.join()
-            if self.audio_frames:
-                audio_data = np.concatenate(self.audio_frames)
-                write_wav(self.audio_filename, self.fs, audio_data)
-
-
-# initialize the screen recorder
-recorder = ScreenRecorder()
+# 初始化录制器
+recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS)
 
 # set the file path
 IMAGE_LIST = [
     "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz",
-    "D:/projects/spingpt/data/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz"
+    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz",
+    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz",
+    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz",
 ]
 current_image_idx = 0 
 
@@ -276,10 +101,10 @@ image_layer = viewer.add_image(image_array, **metadata, visible=False)
 from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
 
 slider_container = QWidget()
-slider_container.setMinimumWidth(300)  # 设置最小宽度
-slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # 允许水平扩展
+slider_container.setMinimumWidth(300)  # set minimum width
+slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # allow horizontal expansion
 main_layout = QVBoxLayout()
-main_layout.setContentsMargins(10, 5, 10, 5)  # 添加布局边距
+main_layout.setContentsMargins(10, 5, 10, 5)  # add margin
 slider_layout = QVBoxLayout()
 
 x_container = QWidget()
@@ -349,8 +174,8 @@ status_label.setStyleSheet("color: green;")
 status_label.setAlignment(Qt.AlignCenter)
 image_name_label = QLabel("Current Image: ")
 image_name_label.setAlignment(Qt.AlignCenter)
-image_name_label.setWordWrap(True)  # 新增自动换行功能
-image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # 添加边距
+image_name_label.setWordWrap(True)  # add auto wrap
+image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # add margin
 main_layout.addWidget(status_label)
 main_layout.addWidget(image_name_label)
 
@@ -449,18 +274,23 @@ slider_container.setStyleSheet("""
 initial_z, initial_y, initial_x = viewer.dims.current_step
 
 # Add orthogonal 2D slice layers
-# axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
-# coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
-# sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
-axial_slice = image_array[initial_z, :, :]
-coronal_slice = image_array[:, initial_y, :]
-sagittal_slice = image_array[:, :, initial_x]
+axial_slice = np.fliplr(np.rot90(image_array[initial_z, :, :], k=2))
+coronal_slice = np.fliplr(np.rot90(image_array[:, initial_y, :], k=2))
+sagittal_slice = np.fliplr(np.rot90(image_array[:, :, initial_x], k=2))
 print('axial_slice:', axial_slice.shape)
 print('coronal_slice:', coronal_slice.shape)
 print('sagittal_slice:', sagittal_slice.shape)
-sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
 axial_layer = viewer.add_image(axial_slice, name='Axial')
-# coronal_layer = viewer.add_image(coronal_slice, name='Coronal', visible=False)
+coronal_layer = viewer.add_image(coronal_slice, name='Coronal', visible=False)
+sagittal_layer = viewer.add_image(sagittal_slice, name='Sagittal')
+
+
+# add text color definition at the beginning of the file
+TEXT_COLOR_WHITE = 1000  # white text
+VIEWER_TEXT_POSITION = (10, 10) # coordinates of the text
+
+# add font initialization at the beginning of the file
+viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
 
 def add_text_to_slice(slice_data, text):
     """add text annotation to the slice"""
@@ -474,16 +304,14 @@ def add_text_to_slice(slice_data, text):
 
 # Set grid layout
 axial_layer = viewer.layers['Axial'] # get the target layer
-# axial_layer.translate = (-50, -100)  # move the layer to the specified position
-# axial_layer.scale = [0.4, 0.4] 
+axial_layer.translate = (-50, -100)  # move the layer to the specified position
+axial_layer.scale = [0.4, 0.4] 
 sagittal_layer = viewer.layers['Sagittal'] 
-# sagittal_layer.translate = (-20, -60)  
-# sagittal_layer.scale = [0.2, 0.2] 
-# coronal_layer = viewer.layers['Coronal'] 
-# coronal_layer.translate = (-110, 90) 
-# coronal_layer.scale = [0.4, 0.4] 
-viewer.grid.enabled = True
-viewer.grid.stride = 2  
+sagittal_layer.translate = (-20, -60)  
+sagittal_layer.scale = [0.2, 0.2] 
+coronal_layer = viewer.layers['Coronal'] 
+coronal_layer.translate = (-110, 90) 
+coronal_layer.scale = [0.4, 0.4] 
 
 # Create line layer
 def create_line_layer(color, line_data, layer, name, visible):
@@ -507,24 +335,22 @@ def update_slices(event):
     x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
     
     # axial view (rotate 90 degrees counterclockwise)
-    # axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
-    axial_slice = image_array[z, :, :]
+    axial_slice = np.fliplr(np.rot90(image_array[z, :, :], k=2))
     
     # coronal view (rotate 180 degrees counterclockwise)
-    # coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
+    coronal_slice = np.fliplr(np.rot90(image_array[:, y, :], k=2))
     
     # sagittal view
-    # sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
-    sagittal_slice = image_array[:, :, x]
+    sagittal_slice = np.fliplr(np.rot90(image_array[:, :, x], k=2))
     
     # update the layer data
     axial_layer.data = axial_slice
-    # coronal_layer.data = coronal_slice
+    coronal_layer.data = coronal_slice
     sagittal_layer.data = sagittal_slice
     
     # refresh the display
     axial_layer.refresh()
-    # coronal_layer.refresh()
+    coronal_layer.refresh()
     sagittal_layer.refresh()
 
     # according to the current slice update the visibility of the points
