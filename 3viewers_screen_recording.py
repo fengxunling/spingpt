@@ -18,7 +18,7 @@ import queue
 
 import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer, Qt
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy
+from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy, QInputDialog
 from recorder import ScreenRecorder
 from viewer_module import ViewerUI
 
@@ -37,6 +37,8 @@ FONT_SIZE = 30
 TEXT_COLOR = 255  
 TEXT_POSITION = (10, 10)  # text position
 MAX_TEXT_DURATION = 5  # seconds of text duration
+RECTANGLE_COLOR = 'lime'  # 新增：矩形框颜色（绿色）
+RECTANGLE_WIDTH = 1           # 新增：矩形框线宽
 
 # 初始化录制器
 recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS)
@@ -85,6 +87,54 @@ metadata = layer_data[0][1]
 viewer3d = ViewerUI(image_array, metadata, filepath)
 viewer = viewer3d.get_viewer()
 points_layer = viewer3d.get_points_layer()
+
+shapes_layer = viewer.add_shapes(
+    name='add rectangle',
+    shape_type='rectangle',
+    edge_color=RECTANGLE_COLOR,
+    edge_width=RECTANGLE_WIDTH,
+    face_color='lime',
+    ndim=2
+)
+viewer.layers.move(len(viewer.layers)-1, 0)  # 将新建的形状层移动到最顶层
+
+def on_shape_added(event):
+    """处理形状添加事件"""
+    if event.action == 'add' and shapes_layer == event.source:
+        # 获取最后一个添加的矩形
+        rect = shapes_layer.data[-1]
+        
+        # 弹出文本输入框
+        text, ok = QInputDialog.getText(
+            None, '标注输入', '请输入标注内容:',
+            QLineEdit.Normal, ''
+        )
+        
+        if ok and text:
+            # 获取物理坐标（示例计算，需根据实际坐标系调整）
+            physical_coord = rect.mean(axis=0) * image_layer.scale + image_layer.translate
+            
+            # 记录日志
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            log_entry = (
+                f"[区域标注] {timestamp}\n"
+                f"坐标范围: {rect.tolist()}\n"
+                f"物理坐标: {physical_coord}\n"
+                f"内容: {text}\n"
+                "------------------------\n"
+            )
+            
+            if recorder.is_recording:
+                with open(recorder.log_path, "a") as f:
+                    f.write(log_entry)
+            
+            # 在图像上添加文字
+            axial_slice = add_text_to_slice(axial_layer.data, text)
+            axial_layer.data = axial_slice
+            axial_layer.refresh()
+
+# 绑定形状图层事件
+shapes_layer.events.data.connect(on_shape_added)
 
 viewer.window._qt_window.showFullScreen() # full screen
 QTimer.singleShot(100, lambda: [
@@ -266,6 +316,29 @@ def toggle_recording(viewer):
         viewer3d.get_status_label().setStyleSheet("color: green;")
         print("Stop recording...")
 
+@viewer.bind_key('B')
+def toggle_rectangle_mode(viewer):
+    """切换矩形标注模式"""
+    shapes_layer.mode = 'add_rectangle'
+    
+    # 强制将标注层置顶
+    viewer.layers.move(viewer.layers.index(shapes_layer), 0)
+    
+    # 仅禁用图像层交互，保持形状层交互
+    for layer in viewer.layers:
+        if isinstance(layer, napari.layers.Image):
+            layer.mouse_pan = False
+            layer.mouse_zoom = False
+    
+    # 确保形状层参数正确
+    viewer.layers.move(viewer.layers.index(shapes_layer), 0)  # 新增：二次确认位置
+    shapes_layer.mouse_pan = True
+    shapes_layer.mouse_zoom = True
+    shapes_layer.face_color = [0,0,0,0]
+    
+    viewer3d.get_status_label().setText("模式: 矩形标注")
+    viewer3d.get_status_label().setStyleSheet("color: blue;")
+
 
 # automatically stop recording when the window is closed
 def on_close(event):
@@ -275,3 +348,4 @@ viewer.window._qt_window.closeEvent = on_close
 
 napari.run()
 
+ 

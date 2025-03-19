@@ -194,4 +194,4 @@ class ScreenRecorder:
             self.audio_thread.join()
             if self.audio_frames:
                 audio_data = np.concatenate(self.audio_frames)
-                write_wav(self.audio_filename, self.fs, audio_data)
+                write_wav(self.audio_filename, self.fs, audio_data) 
