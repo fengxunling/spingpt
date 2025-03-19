@@ -137,30 +137,6 @@ QTimer.singleShot(100, lambda: [
     [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
      if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn"]],  # 过滤保留的按钮
 ])
-# buttons = viewer.window._qt_window.findChildren(QPushButton)
-# print("\n[Visible Buttons]")
-# for btn in buttons:
-#     if btn.isVisible():
-#         print(f"{btn.objectName()} | {btn.text()} | {btn.toolTip()}")
-
-
-
-# # add text color definition at the beginning of the file
-# TEXT_COLOR_WHITE = 1000  # white text
-# VIEWER_TEXT_POSITION = (10, 10) # coordinates of the text
-
-# # add font initialization at the beginning of the file
-# viewer_font = ImageFont.truetype(FONT_PATH, 15) # font size
-
-# def add_text_to_slice(slice_data, text):
-#     """add text annotation to the slice"""
-#     pil_img = Image.fromarray(slice_data)
-#     draw = ImageDraw.Draw(pil_img)
-#     draw.text(VIEWER_TEXT_POSITION, 
-#              text,
-#              fill=TEXT_COLOR_WHITE, 
-#              font=viewer_font)
-#     return np.array(pil_img)
 
 
 # Create line layer
@@ -176,7 +152,6 @@ def create_line_layer(color, line_data, layer, name, visible):
         visible=visible
     )
 
-    
 
 # Connect dimension updates
 viewer.dims.events.current_step.connect(update_slices)
@@ -211,34 +186,71 @@ def toggle_recording(viewer):
 
 @viewer.bind_key('B')
 def toggle_rectangle_mode(viewer):
-    global shapes_layer
-    if not hasattr(viewer, 'shapes_layer') or viewer.layers.get('add rectangle') is None:
+    global shapes_layer, image_layer
+    
+    # 获取当前轴状面视图层
+    image_layer = viewer.layers['Sagittal']
+    
+    # 判断当前维度是否为轴状面视图（第三维度）
+    current_z = viewer.dims.current_step[0]  
+    max_z = viewer3d.image_array.shape[0] - 1
+    if not (0 <= current_z <= max_z):
+            viewer3d.get_status_label().setText("请选择有效的Z轴切片")
+            viewer3d.get_status_label().setStyleSheet("color: red;")
+            return
+    
+    # 创建或获取矩形层
+    if not hasattr(viewer, 'shapes_layer') or 'add rectangle' not in viewer.layers:
         shapes_layer = viewer.add_shapes(
             name='add rectangle',
             shape_type='rectangle',
             edge_color=RECTANGLE_COLOR,
             edge_width=RECTANGLE_WIDTH,
-            face_color='lime',
-            ndim=2
+            face_color=[0,0,0,0],
+            ndim=2,
+            scale=image_layer.scale,    # 直接使用2D scale
+            translate=image_layer.translate  # 直接使用2D translate
         )
-        viewer.layers.move(len(viewer.layers)-1, 0)
+        viewer.layers.move(len(viewer.layers)-1, -1)
         shapes_layer.events.data.connect(on_shape_added)
 
-    # 仅允许形状层交互
+    # 禁用其他图层的交互
     for layer in viewer.layers:
-        # if layer != shapes_layer:
         layer.mouse_pan = False
         layer.mouse_zoom = False
+
+    # 确保矩形层位于最上层
+    viewer.layers.move(viewer.layers.index(shapes_layer), -1)
     
-    # 设置形状层参数
-    shapes_layer.mode = 'add_rectangle'
-    
-    # 确保形状层置顶
-    viewer.layers.move(viewer.layers.index(shapes_layer), 0)
-    shapes_layer.face_color = [0,0,0,0]
-    
-    viewer3d.get_status_label().setText("模式: 矩形标注")
+    viewer3d.get_status_label().setText("模式: 矩形标注（仅在轴状面视图）")
     viewer3d.get_status_label().setStyleSheet("color: blue;")
+
+# @viewer.bind_key('B')
+# def toggle_rectangle_mode(viewer):
+#     global shapes_layer
+#     if not hasattr(viewer, 'shapes_layer') or viewer.layers.get('add rectangle') is None:
+#         shapes_layer = viewer.add_shapes(
+#             name='add rectangle',
+#             shape_type='rectangle',
+#             edge_color=RECTANGLE_COLOR,
+#             edge_width=RECTANGLE_WIDTH,
+#             face_color='lime',
+#             ndim=2
+#         )
+#         viewer.layers.move(len(viewer.layers)-1, 0)
+#         shapes_layer.events.data.connect(on_shape_added)
+
+#     for layer in viewer.layers:
+#         layer.mouse_pan = False
+#         layer.mouse_zoom = False
+    
+#     shapes_layer.mode = 'add_rectangle'
+    
+#     viewer.layers.move(viewer.layers.index(shapes_layer), 0)
+#     shapes_layer.face_color = [0,0,0,0]
+    
+#     viewer3d.get_status_label().setText("模式: 矩形标注")
+#     viewer3d.get_status_label().setStyleSheet("color: blue;")
 
 
 # automatically stop recording when the window is closed
