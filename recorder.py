@@ -187,7 +187,7 @@ class ScreenRecorder:
             self.capture_thread.join()
         if self.writer:
             self.writer.close()
-        print(f"The video is saved at: {os.path.abspath(video_path)}")
+        print(f"The video is saved at: {os.path.abspath(self.video_path)}")
 
         # stop audio recording and save
         if self.audio_thread:

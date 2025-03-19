@@ -20,6 +20,7 @@ import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy
 from recorder import ScreenRecorder
+from viewer_module import ViewerUI
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
@@ -80,8 +81,11 @@ image_array = layer_data[0][0]
 metadata = layer_data[0][1]
 
 
-# Create Viewer and add 3D image layer (hidden)
-viewer = Viewer()
+# Create Viewer and add image layer (hidden)
+viewer3d = ViewerUI(image_array, metadata, filepath)
+viewer = viewer3d.get_viewer()
+points_layer = viewer3d.get_points_layer()
+
 viewer.window._qt_window.showFullScreen() # full screen
 QTimer.singleShot(100, lambda: [
     [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
@@ -97,177 +101,6 @@ QTimer.singleShot(100, lambda: [
 #         print(f"{btn.objectName()} | {btn.text()} | {btn.toolTip()}")
 
 image_layer = viewer.add_image(image_array, **metadata, visible=False)
-
-from qtpy.QtWidgets import QSlider, QWidget, QVBoxLayout
-
-slider_container = QWidget()
-slider_container.setMinimumWidth(300)  # set minimum width
-slider_container.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)  # allow horizontal expansion
-main_layout = QVBoxLayout()
-main_layout.setContentsMargins(10, 5, 10, 5)  # add margin
-slider_layout = QVBoxLayout()
-
-x_container = QWidget()
-x_layout = QVBoxLayout()
-x_slider = QSlider()
-x_slider.setOrientation(1)
-x_slider.setMinimum(0)
-x_slider.setMaximum(image_array.shape[2]-1)
-x_slider.setValue(image_array.shape[2] // 2)
-max_x = image_array.shape[2]-1
-x_label = QLabel(f"X: {x_slider.value()}/{max_x}")
-def update_x(value):
-    current_step = list(viewer.dims.current_step)
-    current_step[2] = value
-    viewer.dims.current_step = tuple(current_step)
-    x_label.setText(f"X: {value}/{max_x}")
-x_slider.valueChanged.connect(update_x)
-x_layout.addWidget(x_slider)
-x_layout.addWidget(x_label)
-x_container.setLayout(x_layout)
-
-y_container = QWidget()
-y_layout = QVBoxLayout()
-y_slider = QSlider()
-y_slider.setOrientation(1)
-y_slider.setMinimum(0)
-y_slider.setMaximum(image_array.shape[1]-1)
-y_slider.setValue(image_array.shape[1] // 2)
-max_y = image_array.shape[1]-1  
-y_label = QLabel(f"Y: {y_slider.value()}/{max_y}")
-def update_y(value):
-    current_step = list(viewer.dims.current_step)
-    current_step[1] = value
-    viewer.dims.current_step = tuple(current_step)
-    y_label.setText(f"Y: {value}/{max_y}") 
-y_slider.valueChanged.connect(update_y)
-y_layout.addWidget(y_slider)
-y_layout.addWidget(y_label)
-y_container.setLayout(y_layout)
-
-z_container = QWidget()
-z_layout = QVBoxLayout()
-z_slider = QSlider()
-z_slider.setOrientation(1)
-z_slider.setMinimum(0)
-z_slider.setMaximum(image_array.shape[0]-1)
-z_slider.setValue(image_array.shape[0] // 2)
-max_z = image_array.shape[0]-1 
-z_label = QLabel(f"Z: {z_slider.value()}/{max_z}")
-def update_z(value):
-    current_step = list(viewer.dims.current_step)
-    current_step[0] = value
-    viewer.dims.current_step = tuple(current_step)
-    z_label.setText(f"Z: {value}/{max_z}")
-z_slider.valueChanged.connect(update_z)
-z_layout.addWidget(z_slider)
-z_layout.addWidget(z_label)
-z_container.setLayout(z_layout)
-
-slider_layout.addWidget(x_container) 
-slider_layout.addWidget(y_container)
-slider_layout.addWidget(z_container)
-
-# create the recording mode annotation
-status_label = QLabel("Recording status: Not recording")
-status_label.setStyleSheet("color: green;")  
-status_label.setAlignment(Qt.AlignCenter)
-image_name_label = QLabel("Current Image: ")
-image_name_label.setAlignment(Qt.AlignCenter)
-image_name_label.setWordWrap(True)  # add auto wrap
-image_name_label.setStyleSheet("QLabel { margin: 5px 20px; }")  # add margin
-main_layout.addWidget(status_label)
-main_layout.addWidget(image_name_label)
-
-# create button for loading images
-nav_buttons_layout = QHBoxLayout()
-prev_btn = QPushButton("Previous")
-prev_btn.setObjectName("nav_prev_btn") 
-next_btn = QPushButton("Next")
-next_btn.setObjectName("nav_next_btn") 
-nav_buttons_layout.addWidget(prev_btn)
-nav_buttons_layout.addWidget(next_btn)
-
-def load_image(idx):
-    global image_array, metadata, image_layer, dimensions, voxel_sizes
-    filepath = IMAGE_LIST[idx]
-    img = nib.load(filepath)
-    image_name = os.path.splitext(os.path.basename(filepath))[0]
-    recorder.image_name = image_name
-    image_name_label.setText(f"Current Image: {image_name}")
-    
-    layer_data = napari_get_reader(filepath)(filepath)
-    image_array = layer_data[0][0]
-    metadata = layer_data[0][1]
-    
-    image_layer.data = image_array
-    image_layer.refresh()
-    
-    x_slider.setMaximum(image_array.shape[2]-1)
-    y_slider.setMaximum(image_array.shape[1]-1)
-    z_slider.setMaximum(image_array.shape[0]-1)
-
-def prev_image():
-    global current_image_idx
-    if current_image_idx > 0:
-        current_image_idx -= 1
-        load_image(current_image_idx)
-
-def next_image():
-    global current_image_idx
-    if current_image_idx < len(IMAGE_LIST)-1:
-        current_image_idx += 1
-        load_image(current_image_idx)
-
-prev_btn.clicked.connect(prev_image)
-next_btn.clicked.connect(next_image)
-
-# create input box
-input_layout = QHBoxLayout()
-annotation_input = QLineEdit()
-annotation_input.setPlaceholderText("Input...")
-submit_btn = QPushButton("Submit")
-submit_btn.setObjectName("submit_btn") 
-input_layout.addWidget(annotation_input)
-input_layout.addWidget(submit_btn)
-
-def submit_annotation():
-    text = annotation_input.text()
-    if text:
-        recorder.add_annotation(text)
-        annotation_input.clear()
-        print(f"Already add: {text}")
-submit_btn.clicked.connect(submit_annotation)
-annotation_input.returnPressed.connect(submit_btn.click)
-
-# add the slider and input box to the main layout
-main_layout.addLayout(slider_layout)  # add the slider first
-main_layout.addLayout(nav_buttons_layout) # add the navigation buttons
-main_layout.addLayout(input_layout)   # then add the input box
-slider_container.setLayout(main_layout)  # set the main layout to the container
-
-# Sync sliders with the viewer
-def sync_sliders(event):
-    current_z = np.clip(viewer.dims.current_step[0], 0, image_array.shape[0]-1) # add bounder check
-    current_y = np.clip(viewer.dims.current_step[1], 0, image_array.shape[1]-1) 
-    current_x = np.clip(viewer.dims.current_step[2], 0, image_array.shape[2]-1)
-
-# add the whole container to the dock 
-axis_controls_dock = viewer.window.add_dock_widget(
-    slider_container, 
-    name="Axis Controls",
-    area='left', 
-    allowed_areas=['left', 'right'], 
-)
-slider_container.setStyleSheet("""
-    QWidget {
-        alignment: left;
-        margin-left: 5px;
-    }
-    QSlider {
-        min-width: 120px;
-    }
-""")
 
 
 # Get initial slice positions
@@ -424,13 +257,13 @@ def toggle_recording(viewer):
     global status_label
     if not recorder.is_recording:
         recorder.start_recording(viewer)
-        status_label.setText("Recording status: recording...")
-        status_label.setStyleSheet("color: red;")  
+        viewer3d.get_status_label().setText("Recording status: recording...")  
+        viewer3d.get_status_label().setStyleSheet("color: red;")
         print("Start recording...")
     else:
         recorder.stop_recording()
-        status_label.setText("Recording status: Not recording")
-        status_label.setStyleSheet("color: green;")  
+        viewer3d.get_status_label().setText("Recording status: Not recording")
+        viewer3d.get_status_label().setStyleSheet("color: green;")
         print("Stop recording...")
 
 
