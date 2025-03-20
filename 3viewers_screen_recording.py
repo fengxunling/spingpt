@@ -163,24 +163,21 @@ def on_shape_added(event):
     except KeyError as e:
         print(f"Sagittal layer not found: {str(e)}")
 
-    if recorder.is_recording:
-        rect_id = len(viewer3d.rect_metadata)  # 生成唯一ID
-        viewer3d.rect_metadata[rect_id] = {
-            "text": "",
-            "audio": "",
-            "coords": physical_coord.tolist()
-        }
-        # 添加列表项
-        item = QListWidgetItem(f"矩形 {rect_id+1} [Sagittal]")
-        viewer3d.rect_list.addItem(item)
+    # 初始化元数据
+    rect_id = len(viewer3d.rect_metadata)
+    viewer3d.rect_metadata[rect_id] = {
+        "text": "",  # 初始化为空字符串
+        "audio": "",
+        "coords": physical_coord.tolist()
+    }
+    # 创建带用户数据（rect_id）的列表项
+    item = QListWidgetItem(f"矩形 {rect_id+1} [Sagittal]")
+    item.setData(Qt.UserRole, rect_id)  # 存储对应的元数据ID
+    viewer3d.rect_list.addItem(item)
+    
+    # 连接双击事件（应在 ViewerUI 初始化时设置）
+    viewer3d.rect_list.itemDoubleClicked.connect(viewer3d.on_rect_item_clicked)
 
-# 更新文本注释到元数据
-def update_annotation():
-    current_rect = viewer3d.rect_list.currentRow()
-    if current_rect != -1:
-        viewer3d.rect_metadata[current_rect]["text"] = viewer3d.annotation_edit.text()
-
-viewer3d.annotation_edit.textChanged.connect(update_annotation)
 
 # ================= bind with key ======================
 @viewer.bind_key('R')  # press 'R' to start/stop recording
@@ -251,18 +248,24 @@ def toggle_rectangle_mode(viewer):
 @viewer.bind_key('C')  
 def refresh_polygons(viewer):
     print('===type C key===')
+    # 获取所有标注数据
+    annotation_count, annotations = viewer3d.count_polygons()
+    # print(f'====annotation_count={annotation_count}, annotations={annotations}')
+
     # 获取多边形数据
     polygon_count, polygons = viewer3d.count_polygons()
-    print(f'polygon_count:{polygon_count}')
-    print(f'polygons:{polygons}')
+    # print(f'polygon_count:{polygon_count}')
+    # print(f'polygons:{polygons}')
     
     # 清空并更新右侧列表
     rect_list = viewer3d.side_panel.findChild(QListWidget)
     rect_list.clear()
-    
-    # 添加新条目
-    for idx, poly in enumerate(polygons, 1):
-        item = QListWidgetItem(f"多边形 {idx} [{poly['layer']}] - {len(poly['coordinates'])}个顶点")
+
+    for idx, ann in enumerate(annotations, 1):
+        item_text = f"矩形 {idx} [Sagittal] - 注释: {ann.get('text','')}" + \
+            f"多边形 {idx} [{ann['layer']}] - {len(ann['coordinates'])}顶点"
+            
+        item = QListWidgetItem(item_text)
         rect_list.addItem(item)
 
 

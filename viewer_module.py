@@ -1,6 +1,7 @@
 from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QSlider, QLineEdit, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
                            QPushButton, QSizePolicy)
+from qtpy.QtWidgets import QInputDialog
 import numpy as np
 import napari
 from napari import Viewer
@@ -34,31 +35,66 @@ class ViewerUI:
         
         # 矩形列表
         self.rect_list = QListWidget()
-        self.rect_list.itemClicked.connect(self._on_rect_selected)  # 新增点击事件绑定
+        self.rect_list.itemClicked.connect(self._on_rect_selected)
         layout.addWidget(QLabel("标注矩形列表"))
         layout.addWidget(self.rect_list)
-
-        # 文本注释输入框
-        self.annotation_edit = QLineEdit()  # 新增文本输入框
-        self.annotation_edit.setPlaceholderText("输入矩形注释...")
-        layout.addWidget(QLabel("注释文本"))
-        layout.addWidget(self.annotation_edit)
         
         # 录音控制
         self.audio_btn = QPushButton("开始录音")
         self.audio_btn.clicked.connect(self.toggle_audio_recording)
         layout.addWidget(self.audio_btn)
+
+        # 文本注释输入框
+        self.annotation_edit = QLineEdit()
+        self.annotation_edit.setPlaceholderText("输入矩形注释...")
+        self.annotation_edit.textChanged.connect(self._update_current_rect_annotation)  # 新增文本变更事件
+        layout.addWidget(QLabel("注释文本"))
+        layout.addWidget(self.annotation_edit)
         
         self.side_panel.setLayout(layout)
         self.viewer.window.add_dock_widget(self.side_panel, name="标注面板", area='right')
 
         # 新增元数据存储
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
+    
+    # 新增注释更新方法
+    def _update_current_rect_annotation(self):
+        """更新当前选中矩形的文本注释"""
+        print(f'==self.annotation={self.annotation_edit.text()}')
+        current_rect = self.rect_list.currentRow()
+        if current_rect != -1 and self.annotation_edit.text():
+            print(f'annotation_edit={self.annotation_edit.text()}')
+            self.rect_metadata[current_rect]["text"] = self.annotation_edit.text()
+            # 更新列表项显示
+            item = self.rect_list.item(current_rect)
+            item.setText(f"矩形 {current_rect+1} [Sagittal] - {self.annotation_edit.text()}")
 
     def _on_rect_selected(self, item):
         """矩形选中事件"""
         rect_id = self.rect_list.row(item)
         self.annotation_edit.setText(self.rect_metadata.get(rect_id, {}).get("text", ""))
+
+    def on_rect_item_clicked(self, item):
+        """处理列表项双击事件"""
+        rect_id = item.data(Qt.UserRole)  # 修改获取方式
+        if rect_id is None:  # 添加空值校验
+            print("Error: Invalid rect_id")
+            return
+            
+        # 添加元数据存在性检查
+        if rect_id not in self.rect_metadata:
+            self.rect_metadata[rect_id] = {"text": "", "audio": "", "coords": []}
+            
+        text, ok = QInputDialog.getText(
+            self.viewer.window._qt_window,  # 修正父窗口引用
+            "添加注释",
+            "请输入矩形注释:", 
+            text=self.rect_metadata[rect_id].get("text", "")
+        )
+        
+        if ok and text:
+            self.rect_metadata[rect_id]["text"] = text
+            item.setText(f"矩形 {rect_id+1} [Sagittal] - {text[:20]}{'...' if len(text)>20 else ''}")
         
     def _create_sliders(self):
         self.slider_container = QWidget()
@@ -322,19 +358,27 @@ class ViewerUI:
         return self.status_label
 
     def count_polygons(self):
-        """
-        统计当前所有多边形及其顶点坐标
-        返回: 
-            tuple (多边形总数, 顶点坐标列表)
-        """
+        """统计多边形和矩形注释"""
         polygons = []
+        print(f'metadata={self.rect_metadata}')
+        # 添加矩形注释处理
         for layer in self.viewer.layers:
-            print(f'layer:{layer}, layer.data={layer.data}')
+            if isinstance(layer, napari.layers.Shapes):
+                for i, shape in enumerate(layer.data):
+                    # 处理矩形注释
+                    if layer.shape_type == 'rectangle':
+                        rect_id = len(self.rect_metadata)  # 获取当前矩形ID
+                        item_text = f"矩形 {rect_id+1} [{layer.name}] - 注释: {self.rect_metadata.get(rect_id,{}).get('text','')}"
+                        polygons.append({
+                            "layer": "矩形注释",
+                            "coordinates": shape,
+                            "text": self.rect_metadata.get(rect_id,{}).get('text','')
+                        })
             if isinstance(layer, napari.layers.Shapes) and layer.ndim == 2:
                 for shape in layer.data:
                     # 检查是否为多边形且至少有3个顶点
                     if len(shape) >= 3:
-                        print('=is polygen')
+                        # print('=is polygen')
                         # 转换坐标系（考虑图层的缩放和平移） TODO: 这个坐标系的计算存疑
                         scaled_coords = [
                             (coord * layer.scale + layer.translate).tolist()
