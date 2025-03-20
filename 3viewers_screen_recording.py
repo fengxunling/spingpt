@@ -43,7 +43,7 @@ RECTANGLE_COLOR = 'lime'  # 新增：矩形框颜色（绿色）
 RECTANGLE_WIDTH = 1           # 新增：矩形框线宽
 
 # 初始化录制器
-recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS)
+recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS, MAX_TEXT_DURATION=MAX_TEXT_DURATION)
 
 # set the file path
 IMAGE_LIST = [
@@ -136,31 +136,31 @@ previous_length = 0
 points_layer.events.data.connect(on_points_changed)
 
 def on_shape_added(event):
-    """形状添加事件处理"""
-    # 添加空数据检查
+    """Shape addition event handler"""
     if not event.source.data:
-        print("警告：收到空形状数据事件")
+        print("Warning: Received empty shape data event")
         return
 
     try:
-        latest_rect = event.source.data[-1]  # 添加异常处理
-        rect_info = f"矩形坐标: {np.round(latest_rect, 2).tolist()}"
+        latest_rect = event.source.data[-1]
+        rect_info = f"Rectangle coordinates: {np.round(latest_rect, 2).tolist()}"
         
-        # 获取物理坐标
+        # Get physical coordinates
         image_layer = viewer.layers['Sagittal']
         physical_coord = latest_rect * image_layer.scale + image_layer.translate
-        coord_str = f"物理坐标: {np.round(physical_coord, 2).tolist()}"
+        coord_str = f"Physical coordinates: {np.round(physical_coord, 2).tolist()}"
         
-        # 添加带时间戳的列表项
-        item = QListWidgetItem(
-            f"{datetime.now().strftime('%H:%M:%S')}\n{rect_info}\n{coord_str}"
-        )
-        viewer3d.rect_list.addItem(item)
-        viewer3d.rect_list.scrollToBottom()
+        # Write information to log file
+        timestamp = datetime.now().strftime('%H:%M:%S')
+        log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
+        recorder.add_annotation(log_text)  # Call recorder's recording method
+
     except IndexError as e:
-        print(f"处理形状数据时发生错误: {str(e)}")
+        print(f"Error processing shape data: {str(e)}")
     except KeyError as e:
-        print(f"未找到Sagittal图层: {str(e)}")
+        print(f"Sagittal layer not found: {str(e)}")
+
+
 
 # ================= bind with key ======================
 @viewer.bind_key('R')  # press 'R' to start/stop recording
@@ -177,22 +177,23 @@ def toggle_recording(viewer):
         viewer3d.get_status_label().setStyleSheet("color: green;")
         print("Stop recording...")
 
+
 @viewer.bind_key('B')
 def toggle_rectangle_mode(viewer):
     global shapes_layer, image_layer
     
-    # 获取当前轴状面视图层
+    # Get current axial view layer
     image_layer = viewer.layers['Sagittal']
     
-    # 判断当前维度是否为轴状面视图（第三维度）
+    # Check if current dimension is axial view (third dimension)
     current_z = viewer.dims.current_step[0]  
     max_z = viewer3d.image_array.shape[0] - 1
     if not (0 <= current_z <= max_z):
-            viewer3d.get_status_label().setText("请选择有效的Z轴切片")
+            viewer3d.get_status_label().setText("Please select a valid Z-axis slice")
             viewer3d.get_status_label().setStyleSheet("color: red;")
             return
     
-    # 创建或获取矩形层
+    # Create or get rectangle layer
     if 'add rectangle' not in viewer.layers:
         shapes_layer = viewer.add_shapes(
             name='add rectangle',
@@ -205,26 +206,26 @@ def toggle_rectangle_mode(viewer):
             translate=image_layer.translate
         )
         viewer.layers.move(len(viewer.layers)-1, -1)
-        # 初始化时立即设置标记
-        shapes_layer._event_connected = False  # 新增初始化标记
+        # Set flag immediately during initialization
+        shapes_layer._event_connected = False  # Add initialization flag
     else:
         shapes_layer = viewer.layers['add rectangle']
-        # 精确断开指定的事件处理函数
-        shapes_layer.events.data.disconnect(on_shape_added)  # 修改为精确断开
+        # Precisely disconnect the specified event handler
+        shapes_layer.events.data.disconnect(on_shape_added)  # Modified for precise disconnection
 
-    # 确保单一事件绑定
+    # Ensure single event binding
     if not getattr(shapes_layer, '_event_connected', False):
         shapes_layer.events.data.connect(on_shape_added)
-        shapes_layer._event_connected = True  # 新增标记更新
+        shapes_layer._event_connected = True  # Update flag
 
-    # 禁用其他图层的交互
+    # Disable interaction with other layers
     with shapes_layer.events.data.blocker():
         for layer in viewer.layers:
             layer.mouse_pan = False
             layer.mouse_zoom = False
         viewer.layers.move(viewer.layers.index(shapes_layer), -1)
     
-    viewer3d.get_status_label().setText("模式: 矩形标注")
+    viewer3d.get_status_label().setText("Mode: Rectangle Annotation")
     viewer3d.get_status_label().setStyleSheet("color: blue;")
 
 

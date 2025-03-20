@@ -12,7 +12,7 @@ import cv2
 from PIL import Image, ImageDraw, ImageFont
 
 class ScreenRecorder:
-    def __init__(self, FONT_PATH, FONT_SIZE, RECORD_PATH, FPS):
+    def __init__(self, FONT_PATH, FONT_SIZE, RECORD_PATH, FPS, MAX_TEXT_DURATION):
         self.is_recording = False
         self.writer = None
         self.monitor = None
@@ -35,6 +35,7 @@ class ScreenRecorder:
 
         self.RECORD_PATH = RECORD_PATH
         self.FPS = FPS
+        self.MAX_TEXT_DURATION = MAX_TEXT_DURATION
     
     def add_annotation(self, text):
         """Add text annotation"""
@@ -43,7 +44,7 @@ class ScreenRecorder:
             self.text_queue.put({
                 "text": text,
                 "timestamp": timestamp,
-                "expire_time": timestamp.timestamp() + MAX_TEXT_DURATION
+                "expire_time": timestamp.timestamp() + self.MAX_TEXT_DURATION  
             })
         
         # write the annotation to the log
