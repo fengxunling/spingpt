@@ -21,6 +21,8 @@ from qtpy.QtCore import QPoint, QTimer, Qt
 from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy, QInputDialog
 from recorder import ScreenRecorder
 from viewer_module import ViewerUI
+# 在现有导入后添加
+from qtpy.QtWidgets import QListWidgetItem  # 新增导入
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
@@ -92,44 +94,8 @@ def on_points_changed(event):
 viewer = viewer3d.get_viewer()
 points_layer = viewer3d.get_points_layer()
 
-def on_shape_added(event):
-    """处理形状添加事件"""
-    if event.action == 'add' and shapes_layer == event.source:
-        # 获取最后一个添加的矩形
-        rect = shapes_layer.data[-1]
-        
-        # 弹出文本输入框
-        text, ok = QInputDialog.getText(
-            None, 'input', 'please add:',
-            QLineEdit.Normal, ''
-        )
-        
-        if ok and text:
-            # 获取物理坐标（示例计算，需根据实际坐标系调整）
-            physical_coord = rect.mean(axis=0) * image_layer.scale + image_layer.translate
-            
-            # 记录日志
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            log_entry = (
-                f"[region timestamp] {timestamp}\n"
-                f"range: {rect.tolist()}\n"
-                f"coordinate: {physical_coord}\n"
-                f"content: {text}\n"
-                "------------------------\n"
-            )
-            
-            if recorder.is_recording:
-                with open(recorder.log_path, "a") as f:
-                    f.write(log_entry)
-            
-            # 在图像上添加文字
-            axial_slice = add_text_to_slice(axial_layer.data, text)
-            axial_layer.data = axial_slice
-            axial_layer.refresh()
 
-
-
-viewer.window._qt_window.showFullScreen() # full screen
+# viewer.window._qt_window.showFullScreen() # full screen
 QTimer.singleShot(100, lambda: [
     [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
     viewer.window._qt_window.menuBar().setVisible(False),
@@ -168,6 +134,33 @@ points_layer = viewer.add_points(
 previous_length = 0
 
 points_layer.events.data.connect(on_points_changed)
+
+def on_shape_added(event):
+    """形状添加事件处理"""
+    # 添加空数据检查
+    if not event.source.data:
+        print("警告：收到空形状数据事件")
+        return
+
+    try:
+        latest_rect = event.source.data[-1]  # 添加异常处理
+        rect_info = f"矩形坐标: {np.round(latest_rect, 2).tolist()}"
+        
+        # 获取物理坐标
+        image_layer = viewer.layers['Sagittal']
+        physical_coord = latest_rect * image_layer.scale + image_layer.translate
+        coord_str = f"物理坐标: {np.round(physical_coord, 2).tolist()}"
+        
+        # 添加带时间戳的列表项
+        item = QListWidgetItem(
+            f"{datetime.now().strftime('%H:%M:%S')}\n{rect_info}\n{coord_str}"
+        )
+        viewer3d.rect_list.addItem(item)
+        viewer3d.rect_list.scrollToBottom()
+    except IndexError as e:
+        print(f"处理形状数据时发生错误: {str(e)}")
+    except KeyError as e:
+        print(f"未找到Sagittal图层: {str(e)}")
 
 # ================= bind with key ======================
 @viewer.bind_key('R')  # press 'R' to start/stop recording
@@ -225,32 +218,19 @@ def toggle_rectangle_mode(viewer):
     viewer3d.get_status_label().setText("模式: 矩形标注（仅在轴状面视图）")
     viewer3d.get_status_label().setStyleSheet("color: blue;")
 
-# @viewer.bind_key('B')
-# def toggle_rectangle_mode(viewer):
-#     global shapes_layer
-#     if not hasattr(viewer, 'shapes_layer') or viewer.layers.get('add rectangle') is None:
-#         shapes_layer = viewer.add_shapes(
-#             name='add rectangle',
-#             shape_type='rectangle',
-#             edge_color=RECTANGLE_COLOR,
-#             edge_width=RECTANGLE_WIDTH,
-#             face_color='lime',
-#             ndim=2
-#         )
-#         viewer.layers.move(len(viewer.layers)-1, 0)
-#         shapes_layer.events.data.connect(on_shape_added)
-
-#     for layer in viewer.layers:
-#         layer.mouse_pan = False
-#         layer.mouse_zoom = False
-    
-#     shapes_layer.mode = 'add_rectangle'
-    
-#     viewer.layers.move(viewer.layers.index(shapes_layer), 0)
-#     shapes_layer.face_color = [0,0,0,0]
-    
-#     viewer3d.get_status_label().setText("模式: 矩形标注")
-#     viewer3d.get_status_label().setStyleSheet("color: blue;")
+    # 创建或获取矩形层
+    if 'add rectangle' not in viewer.layers:
+        shapes_layer = viewer.add_shapes(
+            name='add rectangle',
+            shape_type='rectangle',
+            edge_color=RECTANGLE_COLOR,
+            edge_width=RECTANGLE_WIDTH,
+            face_color=[0,0,0,0],
+            ndim=2,
+            scale=image_layer.scale,
+            translate=image_layer.translate
+        )
+        shapes_layer.events.data.connect(on_shape_added)  # 连接事件
 
 
 # automatically stop recording when the window is closed

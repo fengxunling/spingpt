@@ -6,6 +6,10 @@ import napari
 from napari import Viewer
 from napari.layers import Image, Points
 import os
+from qtpy.QtWidgets import QListWidget  # 新增导入
+from datetime import datetime  # 新增导入
+import sounddevice as sd  # 新增导入
+from scipy.io.wavfile import write as write_wav  # 新增导入
 
 class ViewerUI:
     def __init__(self, image_array, metadata, filepath):
@@ -15,12 +19,31 @@ class ViewerUI:
         self._init_ui(filepath)
         self._setup_layers()
         self._connect_events()
+        self._init_side_panel()
 
     def _init_ui(self, filepath):
         """Initialize viewer interface components"""
         self.viewer.window._qt_window.showFullScreen()
         self._create_sliders()
         self._setup_toolbar(filepath)
+    
+    def _init_side_panel(self):
+        """初始化右侧标注面板"""
+        self.side_panel = QWidget()
+        layout = QVBoxLayout()
+        
+        # 矩形列表
+        self.rect_list = QListWidget()
+        layout.addWidget(QLabel("标注矩形列表"))
+        layout.addWidget(self.rect_list)
+        
+        # 录音控制
+        self.audio_btn = QPushButton("开始录音")
+        self.audio_btn.clicked.connect(self.toggle_audio_recording)
+        layout.addWidget(self.audio_btn)
+        
+        self.side_panel.setLayout(layout)
+        self.viewer.window.add_dock_widget(self.side_panel, name="标注面板", area='right')
         
     def _create_sliders(self):
         self.slider_container = QWidget()
@@ -243,6 +266,37 @@ class ViewerUI:
                     f.writelines(log_info)
             
             previous_length = current_length
+    
+    def toggle_audio_recording(self):
+        """切换录音状态"""
+        if not hasattr(self, 'is_audio_recording'):
+            self.is_audio_recording = False
+            
+        self.is_audio_recording = not self.is_audio_recording
+        self.audio_btn.setText("停止录音" if self.is_audio_recording else "开始录音")
+        
+        if self.is_audio_recording:
+            threading.Thread(target=self._record_audio).start()
+
+    def _record_audio(self):
+        """录音线程"""
+        fs = 44100
+        self.audio_frames = []
+        
+        def callback(indata, frames, time, status):
+            if status:
+                print(status)
+            self.audio_frames.append(indata.copy())
+
+        with sd.InputStream(samplerate=fs, channels=2, callback=callback):
+            while self.is_audio_recording:
+                time.sleep(0.1)
+                
+        # 保存录音
+        if self.audio_frames:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            filename = f"{RECORD_PATH}{self.image_name}_annotation_{timestamp}.wav"
+            write_wav(filename, fs, np.concatenate(self.audio_frames))
 
     def get_viewer(self):
         return self.viewer
