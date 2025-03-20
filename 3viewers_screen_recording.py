@@ -193,32 +193,6 @@ def toggle_rectangle_mode(viewer):
             return
     
     # 创建或获取矩形层
-    if not hasattr(viewer, 'shapes_layer') or 'add rectangle' not in viewer.layers:
-        shapes_layer = viewer.add_shapes(
-            name='add rectangle',
-            shape_type='rectangle',
-            edge_color=RECTANGLE_COLOR,
-            edge_width=RECTANGLE_WIDTH,
-            face_color=[0,0,0,0],
-            ndim=2,
-            scale=image_layer.scale,    # 直接使用2D scale
-            translate=image_layer.translate  # 直接使用2D translate
-        )
-        viewer.layers.move(len(viewer.layers)-1, -1)
-        shapes_layer.events.data.connect(on_shape_added)
-
-    # 禁用其他图层的交互
-    for layer in viewer.layers:
-        layer.mouse_pan = False
-        layer.mouse_zoom = False
-
-    # 确保矩形层位于最上层
-    viewer.layers.move(viewer.layers.index(shapes_layer), -1)
-    
-    viewer3d.get_status_label().setText("模式: 矩形标注（仅在轴状面视图）")
-    viewer3d.get_status_label().setStyleSheet("color: blue;")
-
-    # 创建或获取矩形层
     if 'add rectangle' not in viewer.layers:
         shapes_layer = viewer.add_shapes(
             name='add rectangle',
@@ -230,7 +204,28 @@ def toggle_rectangle_mode(viewer):
             scale=image_layer.scale,
             translate=image_layer.translate
         )
-        shapes_layer.events.data.connect(on_shape_added)  # 连接事件
+        viewer.layers.move(len(viewer.layers)-1, -1)
+        # 初始化时立即设置标记
+        shapes_layer._event_connected = False  # 新增初始化标记
+    else:
+        shapes_layer = viewer.layers['add rectangle']
+        # 精确断开指定的事件处理函数
+        shapes_layer.events.data.disconnect(on_shape_added)  # 修改为精确断开
+
+    # 确保单一事件绑定
+    if not getattr(shapes_layer, '_event_connected', False):
+        shapes_layer.events.data.connect(on_shape_added)
+        shapes_layer._event_connected = True  # 新增标记更新
+
+    # 禁用其他图层的交互
+    with shapes_layer.events.data.blocker():
+        for layer in viewer.layers:
+            layer.mouse_pan = False
+            layer.mouse_zoom = False
+        viewer.layers.move(viewer.layers.index(shapes_layer), -1)
+    
+    viewer3d.get_status_label().setText("模式: 矩形标注")
+    viewer3d.get_status_label().setStyleSheet("color: blue;")
 
 
 # automatically stop recording when the window is closed
