@@ -34,8 +34,15 @@ class ViewerUI:
         
         # 矩形列表
         self.rect_list = QListWidget()
+        self.rect_list.itemClicked.connect(self._on_rect_selected)  # 新增点击事件绑定
         layout.addWidget(QLabel("标注矩形列表"))
         layout.addWidget(self.rect_list)
+
+        # 文本注释输入框
+        self.annotation_edit = QLineEdit()  # 新增文本输入框
+        self.annotation_edit.setPlaceholderText("输入矩形注释...")
+        layout.addWidget(QLabel("注释文本"))
+        layout.addWidget(self.annotation_edit)
         
         # 录音控制
         self.audio_btn = QPushButton("开始录音")
@@ -44,6 +51,14 @@ class ViewerUI:
         
         self.side_panel.setLayout(layout)
         self.viewer.window.add_dock_widget(self.side_panel, name="标注面板", area='right')
+
+        # 新增元数据存储
+        self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
+
+    def _on_rect_selected(self, item):
+        """矩形选中事件"""
+        rect_id = self.rect_list.row(item)
+        self.annotation_edit.setText(self.rect_metadata.get(rect_id, {}).get("text", ""))
         
     def _create_sliders(self):
         self.slider_container = QWidget()
@@ -269,14 +284,11 @@ class ViewerUI:
     
     def toggle_audio_recording(self):
         """切换录音状态"""
-        if not hasattr(self, 'is_audio_recording'):
-            self.is_audio_recording = False
-            
-        self.is_audio_recording = not self.is_audio_recording
-        self.audio_btn.setText("停止录音" if self.is_audio_recording else "开始录音")
-        
-        if self.is_audio_recording:
-            threading.Thread(target=self._record_audio).start()
+        # 获取当前选中矩形ID
+        self.current_rect_id = self.rect_list.currentRow()
+        if self.current_rect_id == -1:
+            self.status_label.setText("请先选择要绑定的矩形")
+            return
 
     def _record_audio(self):
         """录音线程"""
@@ -291,12 +303,14 @@ class ViewerUI:
         with sd.InputStream(samplerate=fs, channels=2, callback=callback):
             while self.is_audio_recording:
                 time.sleep(0.1)
-                
-        # 保存录音
+        
         if self.audio_frames:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{RECORD_PATH}{self.image_name}_annotation_{timestamp}.wav"
+            filename = f"{RECORD_PATH}{self.image_name}_rect_{self.current_rect_id}_{timestamp}.wav"  # 修改文件名
             write_wav(filename, fs, np.concatenate(self.audio_frames))
+            # 保存录音文件路径到元数据
+            if self.current_rect_id is not None:
+                self.rect_metadata[self.current_rect_id]["audio"] = filename
 
     def get_viewer(self):
         return self.viewer
@@ -306,3 +320,29 @@ class ViewerUI:
     
     def get_status_label(self):
         return self.status_label
+
+    def count_polygons(self):
+        """
+        统计当前所有多边形及其顶点坐标
+        返回: 
+            tuple (多边形总数, 顶点坐标列表)
+        """
+        polygons = []
+        for layer in self.viewer.layers:
+            print(f'layer:{layer}, layer.data={layer.data}')
+            if isinstance(layer, napari.layers.Shapes) and layer.ndim == 2:
+                for shape in layer.data:
+                    # 检查是否为多边形且至少有3个顶点
+                    if len(shape) >= 3:
+                        print('=is polygen')
+                        # 转换坐标系（考虑图层的缩放和平移） TODO: 这个坐标系的计算存疑
+                        scaled_coords = [
+                            (coord * layer.scale + layer.translate).tolist()
+                            for coord in shape
+                        ]
+                        polygons.append({
+                            "layer": layer.name,
+                            "coordinates": scaled_coords
+                        })
+        
+        return len(polygons), polygons

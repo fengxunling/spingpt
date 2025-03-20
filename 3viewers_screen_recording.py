@@ -18,7 +18,10 @@ import queue
 
 import nibabel as nib
 from qtpy.QtCore import QPoint, QTimer, Qt
-from qtpy.QtWidgets import QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, QWidget, QLabel, QSizePolicy, QInputDialog
+from qtpy.QtWidgets import (
+    QLineEdit, QPushButton, QHBoxLayout, QToolBar, QSlider, 
+    QWidget, QLabel, QSizePolicy, QInputDialog, QListWidgetItem, QListWidget 
+)
 from recorder import ScreenRecorder
 from viewer_module import ViewerUI
 # 在现有导入后添加
@@ -160,7 +163,24 @@ def on_shape_added(event):
     except KeyError as e:
         print(f"Sagittal layer not found: {str(e)}")
 
+    if recorder.is_recording:
+        rect_id = len(viewer3d.rect_metadata)  # 生成唯一ID
+        viewer3d.rect_metadata[rect_id] = {
+            "text": "",
+            "audio": "",
+            "coords": physical_coord.tolist()
+        }
+        # 添加列表项
+        item = QListWidgetItem(f"矩形 {rect_id+1} [Sagittal]")
+        viewer3d.rect_list.addItem(item)
 
+# 更新文本注释到元数据
+def update_annotation():
+    current_rect = viewer3d.rect_list.currentRow()
+    if current_rect != -1:
+        viewer3d.rect_metadata[current_rect]["text"] = viewer3d.annotation_edit.text()
+
+viewer3d.annotation_edit.textChanged.connect(update_annotation)
 
 # ================= bind with key ======================
 @viewer.bind_key('R')  # press 'R' to start/stop recording
@@ -228,6 +248,23 @@ def toggle_rectangle_mode(viewer):
     viewer3d.get_status_label().setText("Mode: Rectangle Annotation")
     viewer3d.get_status_label().setStyleSheet("color: blue;")
 
+@viewer.bind_key('C')  
+def refresh_polygons(viewer):
+    print('===type C key===')
+    # 获取多边形数据
+    polygon_count, polygons = viewer3d.count_polygons()
+    print(f'polygon_count:{polygon_count}')
+    print(f'polygons:{polygons}')
+    
+    # 清空并更新右侧列表
+    rect_list = viewer3d.side_panel.findChild(QListWidget)
+    rect_list.clear()
+    
+    # 添加新条目
+    for idx, poly in enumerate(polygons, 1):
+        item = QListWidgetItem(f"多边形 {idx} [{poly['layer']}] - {len(poly['coordinates'])}个顶点")
+        rect_list.addItem(item)
+
 
 # automatically stop recording when the window is closed
 def on_close(event):
@@ -236,5 +273,6 @@ def on_close(event):
 viewer.window._qt_window.closeEvent = on_close
 
 napari.run()
+
 
  
