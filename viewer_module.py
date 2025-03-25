@@ -66,29 +66,29 @@ class ViewerUI:
         layout.addWidget(QLabel("Annotation Text"))
         layout.addWidget(self.annotation_edit)
 
-        # +++ 新增AI交互组件 +++
+        # +++ Add AI interaction components +++
         ai_layout = QVBoxLayout()
         
-        # 指令输入框
+        # Command input box
         self.ai_input = QLineEdit()
-        self.ai_input.setPlaceholderText("输入指令（例：将X切片调整到22）")
-        ai_layout.addWidget(QLabel("AI指令:"))
+        self.ai_input.setPlaceholderText("Enter command (e.g.: Adjust X slice to 22)")
+        ai_layout.addWidget(QLabel("AI Command:"))
         ai_layout.addWidget(self.ai_input)
 
-        # 提交按钮
-        self.ai_submit_btn = QPushButton("提交指令")
-        self.ai_submit_btn.setObjectName("ai_submit_btn")  # 添加对象名称
+        # Submit button
+        self.ai_submit_btn = QPushButton("Submit Command")
+        self.ai_submit_btn.setObjectName("ai_submit_btn")  # Add object name
         self.ai_submit_btn.clicked.connect(self._handle_ai_command)
         ai_layout.addWidget(self.ai_submit_btn)
 
-        # 结果显示
-        self.ai_response_label = QLabel("模型回复：")
+        # Result display
+        self.ai_response_label = QLabel("Model Response:")
         self.ai_response = QLabel()
         ai_layout.addWidget(self.ai_response_label)
         ai_layout.addWidget(self.ai_response)
 
         layout.addLayout(ai_layout)
-        # --- 新增结束 ---
+        # --- End of addition ---
 
         
         # Add annotation list
@@ -98,7 +98,7 @@ class ViewerUI:
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
 
-        # 获取布局中的所有项目
+        # Get all items in the layout
         layout = self.side_panel.layout()
         for i in range(layout.count()):
             item = layout.itemAt(i)
