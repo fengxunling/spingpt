@@ -104,7 +104,7 @@ QTimer.singleShot(100, lambda: [
     viewer.window._qt_window.menuBar().setVisible(False),
     viewer.window._qt_window.statusBar().setVisible(False),
     [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
-     if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn", "audio_record_btn"]],  # 添加录音按钮标识
+     if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn", "audio_record_btn", "ai_submit_btn"]],  # 添加录音按钮标识
 ])
 
 

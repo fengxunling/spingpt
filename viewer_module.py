@@ -13,6 +13,9 @@ import sounddevice as sd
 import threading 
 import time
 from scipy.io.wavfile import write
+from utils.transcribe import transcribe_audio  
+from utils.llm import generate_napari_code 
+import re
 
 class ViewerUI:
     def __init__(self, image_array, metadata, filepath, RECORD_PATH):
@@ -62,6 +65,31 @@ class ViewerUI:
         self.annotation_edit.textChanged.connect(self._update_current_rect_annotation)
         layout.addWidget(QLabel("Annotation Text"))
         layout.addWidget(self.annotation_edit)
+
+        # +++ 新增AI交互组件 +++
+        ai_layout = QVBoxLayout()
+        
+        # 指令输入框
+        self.ai_input = QLineEdit()
+        self.ai_input.setPlaceholderText("输入指令（例：将X切片调整到22）")
+        ai_layout.addWidget(QLabel("AI指令:"))
+        ai_layout.addWidget(self.ai_input)
+
+        # 提交按钮
+        self.ai_submit_btn = QPushButton("提交指令")
+        self.ai_submit_btn.setObjectName("ai_submit_btn")  # 添加对象名称
+        self.ai_submit_btn.clicked.connect(self._handle_ai_command)
+        ai_layout.addWidget(self.ai_submit_btn)
+
+        # 结果显示
+        self.ai_response_label = QLabel("模型回复：")
+        self.ai_response = QLabel()
+        ai_layout.addWidget(self.ai_response_label)
+        ai_layout.addWidget(self.ai_response)
+
+        layout.addLayout(ai_layout)
+        # --- 新增结束 ---
+
         
         # Add annotation list
         self.side_panel.setLayout(layout)
@@ -384,13 +412,40 @@ class ViewerUI:
         write(audio_path, self.fs, audio_data)
         
         # 调用转写功能
-        from transcribe import transcribe_audio  # 导入转写函数
         txt_path = audio_path.replace('.wav', '.txt')
         transcribe_audio(audio_path, txt_path)
         
         # 将结果加载到文本框
         with open(txt_path, 'r', encoding='utf-8') as f:
             self.annotation_edit.setText(f.read())
+
+    def _handle_ai_command(self):
+        """处理AI指令"""
+        
+        command = self.ai_input.text()
+        if not command:
+            return
+        
+        # 处理返回值的类型校验
+        try:
+            number, axis = generate_napari_code(command)  # 现在返回的是 (int, str)
+            if axis is None:
+                raise ValueError("Invalid axis")
+                
+            # 更新响应显示
+            self.ai_response.setText(f"切片位置: {number}, 轴向: {axis.upper()}")
+            
+            # 根据轴向设置滑块值
+            if axis == 'x':
+                self.x_slider.setValue(number)
+            elif axis == 'y':
+                self.y_slider.setValue(number)
+            elif axis == 'z':
+                self.z_slider.setValue(number)
+                
+        except (ValueError, TypeError) as e:
+            self.ai_response.setText(f"指令错误: {str(e)}")
+        
 
     def get_viewer(self):
         return self.viewer
