@@ -50,10 +50,10 @@ recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=
 
 # set the file path
 IMAGE_LIST = [
-    "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz",
-    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz",
-    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz",
-    # "D:/projects/spingpt/data/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz",
+    "E:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz",
+    # "E:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz",
+    # "E:/projects/spingpt/data/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz",
+    # "E:/projects/spingpt/data/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz",
 ]
 current_image_idx = 0 
 
@@ -254,16 +254,14 @@ def refresh_polygons(viewer):
 
     # 获取多边形数据
     polygon_count, polygons = viewer3d.count_polygons()
-    # print(f'polygon_count:{polygon_count}')
-    # print(f'polygons:{polygons}')
     
     # 清空并更新右侧列表
     rect_list = viewer3d.side_panel.findChild(QListWidget)
     rect_list.clear()
 
     for idx, ann in enumerate(annotations, 1):
-        item_text = f"矩形 {idx} [Sagittal] - 注释: {ann.get('text','')}" + \
-            f"多边形 {idx} [{ann['layer']}] - {len(ann['coordinates'])}顶点"
+        item_text = f"矩形 {idx} [Sagittal] - annotation: {ann.get('text','')}" + \
+            f"多边形 {idx} [{ann['layer']}] - {len(ann['coordinates'])}顶点 -{viewer3d.annotation_edit.text()}"
             
         item = QListWidgetItem(item_text)
         rect_list.addItem(item)

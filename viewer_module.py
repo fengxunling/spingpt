@@ -3,7 +3,7 @@ from qtpy.QtWidgets import (QSlider, QLineEdit, QWidget, QLabel, QVBoxLayout, QH
                            QPushButton, QSizePolicy)
 from qtpy.QtWidgets import QInputDialog
 import numpy as np
-import napari
+import napari 
 from napari import Viewer
 from napari.layers import Image, Points
 import os
@@ -67,7 +67,7 @@ class ViewerUI:
             self.rect_metadata[current_rect]["text"] = self.annotation_edit.text()
             # 更新列表项显示
             item = self.rect_list.item(current_rect)
-            item.setText(f"矩形 {current_rect+1} [Sagittal] - {self.annotation_edit.text()}")
+            # item.setText(f"矩形 {current_rect+1} [Sagittal] - {self.annotation_edit.text()}")
 
     def _on_rect_selected(self, item):
         """矩形选中事件"""
