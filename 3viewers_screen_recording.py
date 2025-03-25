@@ -32,7 +32,6 @@ from scipy.io.wavfile import write as write_wav
 import cv2
 
 # set the parameters
-RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'  # recording file path
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
@@ -43,6 +42,8 @@ TEXT_POSITION = (10, 10)  # text position
 MAX_TEXT_DURATION = 5  # seconds of text duration
 RECTANGLE_COLOR = 'lime'  # rectangle color (green)
 RECTANGLE_WIDTH = 1 # rectangle line width
+# 在全局参数区添加录音文件路径
+RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'
 
 # Initialize recorder
 recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS, MAX_TEXT_DURATION=MAX_TEXT_DURATION)
@@ -88,7 +89,7 @@ metadata = layer_data[0][1]
 
 
 # Create Viewer and add image layer (hidden)
-viewer3d = ViewerUI(image_array, metadata, filepath)
+viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH)
 def update_slices(event):
     viewer3d._update_slices(event)
 def on_points_changed(event):
@@ -103,7 +104,7 @@ QTimer.singleShot(100, lambda: [
     viewer.window._qt_window.menuBar().setVisible(False),
     viewer.window._qt_window.statusBar().setVisible(False),
     [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
-     if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn"]],  # 过滤保留的按钮
+     if btn.objectName() not in ["nav_prev_btn", "nav_next_btn", "submit_btn", "audio_record_btn"]],  # 添加录音按钮标识
 ])
 
 

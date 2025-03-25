@@ -10,17 +10,22 @@ import os
 from qtpy.QtWidgets import QListWidget 
 from datetime import datetime 
 import sounddevice as sd 
-from scipy.io.wavfile import write as write_wav 
+import threading 
+import time
+from scipy.io.wavfile import write
 
 class ViewerUI:
-    def __init__(self, image_array, metadata, filepath):
+    def __init__(self, image_array, metadata, filepath, RECORD_PATH):
         self.viewer = Viewer()
         self.image_array = image_array
         self.metadata = metadata
+        self.RECORD_PATH = RECORD_PATH
         self._init_ui(filepath)
         self._setup_layers()
         self._connect_events()
         self._init_side_panel()
+        self.audio_recording = False 
+        self.audio_frames = []
 
     def _init_ui(self, filepath):
         """Initialize viewer interface components"""
@@ -33,29 +38,44 @@ class ViewerUI:
         self.side_panel = QWidget()
         layout = QVBoxLayout()
         
-        # Rectangle list
+        # rectangle list
         self.rect_list = QListWidget()
         self.rect_list.itemClicked.connect(self._on_rect_selected)
         layout.addWidget(QLabel("Rectangle List"))
         layout.addWidget(self.rect_list)
-        
-        # Audio control
-        self.audio_btn = QPushButton("Start Recording")
-        self.audio_btn.clicked.connect(self.toggle_audio_recording)
-        layout.addWidget(self.audio_btn)
+
+        # audio button
+        audio_layout = QHBoxLayout()
+        self.record_btn = QPushButton("start recording")
+        self.record_btn.setObjectName("audio_record_btn")  # 添加对象名称
+        self.record_btn.clicked.connect(self.toggle_audio_recording)
+        self.record_btn.setMinimumWidth(120)
+        audio_layout.addStretch()
+        audio_layout.addWidget(self.record_btn)
+        audio_layout.addStretch()
+        audio_layout.setContentsMargins(0, 10, 0, 10)
+        layout.addLayout(audio_layout)
 
         # Text annotation input box
         self.annotation_edit = QLineEdit()
         self.annotation_edit.setPlaceholderText("Enter rectangle annotation...")
-        self.annotation_edit.textChanged.connect(self._update_current_rect_annotation) 
+        self.annotation_edit.textChanged.connect(self._update_current_rect_annotation)
         layout.addWidget(QLabel("Annotation Text"))
         layout.addWidget(self.annotation_edit)
         
+        # Add annotation list
         self.side_panel.setLayout(layout)
         self.viewer.window.add_dock_widget(self.side_panel, name="Annotation Panel", area='right')
 
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
+
+        # 获取布局中的所有项目
+        layout = self.side_panel.layout()
+        for i in range(layout.count()):
+            item = layout.itemAt(i)
+            if item:
+                print(f'Layout elements: {item.widget()}')
     
     # Add annotation update method
     def _update_current_rect_annotation(self):
@@ -319,34 +339,58 @@ class ViewerUI:
             previous_length = current_length
     
     def toggle_audio_recording(self):
-        """Toggle audio recording status"""
-        # Get current selected rectangle ID
-        self.current_rect_id = self.rect_list.currentRow()
-        if self.current_rect_id == -1:
-            self.status_label.setText("Please select a rectangle to bind first")
-            return
+        """切换录音状态"""
+        if not self.audio_recording:
+            # 开始录音
+            self.audio_frames = []
+            self.audio_recording = True
+            self.record_btn.setText("停止录音")
+            self.fs = 44100  # 采样率
+            
+            # 创建录音线程
+            self.audio_thread = threading.Thread(target=self._record_audio)
+            self.audio_thread.start()
+        else:
+            # 停止录音
+            self.audio_recording = False
+            self.record_btn.setText("开始录音")
+            self.save_and_transcribe_audio()
 
     def _record_audio(self):
-        """Audio recording thread"""
-        fs = 44100
-        self.audio_frames = []
-        
-        def callback(indata, frames, time, status):
-            if status:
-                print(status)
-            self.audio_frames.append(indata.copy())
-
-        with sd.InputStream(samplerate=fs, channels=2, callback=callback):
-            while self.is_audio_recording:
+        """录音线程"""
+        with sd.InputStream(samplerate=self.fs, channels=1, callback=self.audio_callback):
+            while self.audio_recording:
                 time.sleep(0.1)
+
+    def audio_callback(self, indata, frames, time, status):
+        """音频回调"""
+        if status:
+            print(status)
+        self.audio_frames.append(indata.copy())
+
+    def save_and_transcribe_audio(self):
+        """保存音频并转写"""
+        if not self.audio_frames:
+            return
         
-        if self.audio_frames:
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{RECORD_PATH}{self.image_name}_rect_{self.current_rect_id}_{timestamp}.wav"  # Modify filename
-            write_wav(filename, fs, np.concatenate(self.audio_frames))
-            # Save audio file path to metadata
-            if self.current_rect_id is not None:
-                self.rect_metadata[self.current_rect_id]["audio"] = filename
+        # 拼接音频数据
+        audio_data = np.concatenate(self.audio_frames, axis=0)
+        
+        # 生成文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        audio_path = os.path.join(self.RECORD_PATH, f"recording_{timestamp}.wav")
+        
+        # 保存WAV文件
+        write(audio_path, self.fs, audio_data)
+        
+        # 调用转写功能
+        from transcribe import transcribe_audio  # 导入转写函数
+        txt_path = audio_path.replace('.wav', '.txt')
+        transcribe_audio(audio_path, txt_path)
+        
+        # 将结果加载到文本框
+        with open(txt_path, 'r', encoding='utf-8') as f:
+            self.annotation_edit.setText(f.read())
 
     def get_viewer(self):
         return self.viewer

@@ -100,10 +100,6 @@ class ScreenRecorder:
         with open(self.log_path, "a") as f:
             f.write(f"\n[Video Recording Started] {timestamp_start}\n")
         
-        # get the napari window coordinates
-        # win = viewer.window._qt_window
-        # win.moveEvent = lambda event: self._update_region(win)  # update the region when the window moves
-        # self._update_region(win)
         win = viewer.window._qt_window
         time.sleep(0.5)  # add delay
         self._update_region(win)
@@ -116,11 +112,11 @@ class ScreenRecorder:
         self.capture_thread = threading.Thread(target=self._capture_loop)
         self.capture_thread.start()
 
-        # initialize the audio recording
-        self.audio_filename = os.path.join(self.RECORD_PATH, f"{base_name}_temp.wav")
-        self.audio_frames = []
-        self.audio_thread = threading.Thread(target=self._record_audio)
-        self.audio_thread.start()
+        # # initialize the audio recording
+        # self.audio_filename = os.path.join(self.RECORD_PATH, f"{base_name}_temp.wav")
+        # self.audio_frames = []
+        # self.audio_thread = threading.Thread(target=self._record_audio)
+        # self.audio_thread.start()
 
     def _record_audio(self):
         """audio recording thread"""
@@ -190,9 +186,9 @@ class ScreenRecorder:
             self.writer.close()
         print(f"The video is saved at: {os.path.abspath(self.video_path)}")
 
-        # stop audio recording and save
-        if self.audio_thread:
-            self.audio_thread.join()
-            if self.audio_frames:
-                audio_data = np.concatenate(self.audio_frames)
-                write_wav(self.audio_filename, self.fs, audio_data) 
+        # # stop audio recording and save
+        # if self.audio_thread:
+        #     self.audio_thread.join()
+        #     if self.audio_frames:
+        #         audio_data = np.concatenate(self.audio_frames)
+        #         write_wav(self.audio_filename, self.fs, audio_data) 
