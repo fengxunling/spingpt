@@ -24,8 +24,7 @@ from qtpy.QtWidgets import (
 )
 from recorder import ScreenRecorder
 from viewer_module import ViewerUI
-# 在现有导入后添加
-from qtpy.QtWidgets import QListWidgetItem  # 新增导入
+from qtpy.QtWidgets import QListWidgetItem 
 
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
@@ -42,10 +41,10 @@ FONT_SIZE = 30
 TEXT_COLOR = 255  
 TEXT_POSITION = (10, 10)  # text position
 MAX_TEXT_DURATION = 5  # seconds of text duration
-RECTANGLE_COLOR = 'lime'  # 新增：矩形框颜色（绿色）
-RECTANGLE_WIDTH = 1           # 新增：矩形框线宽
+RECTANGLE_COLOR = 'lime'  # rectangle color (green)
+RECTANGLE_WIDTH = 1 # rectangle line width
 
-# 初始化录制器
+# Initialize recorder
 recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS, MAX_TEXT_DURATION=MAX_TEXT_DURATION)
 
 # set the file path
@@ -163,19 +162,19 @@ def on_shape_added(event):
     except KeyError as e:
         print(f"Sagittal layer not found: {str(e)}")
 
-    # 初始化元数据
+    # Initialize metadata
     rect_id = len(viewer3d.rect_metadata)
     viewer3d.rect_metadata[rect_id] = {
-        "text": "",  # 初始化为空字符串
+        "text": "",  # Initialize as empty string
         "audio": "",
         "coords": physical_coord.tolist()
     }
-    # 创建带用户数据（rect_id）的列表项
-    item = QListWidgetItem(f"矩形 {rect_id+1} [Sagittal]")
-    item.setData(Qt.UserRole, rect_id)  # 存储对应的元数据ID
+    # Create list item with user data (rect_id)
+    item = QListWidgetItem(f"add points...")
+    item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
     viewer3d.rect_list.addItem(item)
     
-    # 连接双击事件（应在 ViewerUI 初始化时设置）
+    # Connect double-click event (should be set during ViewerUI initialization)
     viewer3d.rect_list.itemDoubleClicked.connect(viewer3d.on_rect_item_clicked)
 
 
@@ -248,20 +247,20 @@ def toggle_rectangle_mode(viewer):
 @viewer.bind_key('C')  
 def refresh_polygons(viewer):
     print('===type C key===')
-    # 获取所有标注数据
+    # Get all annotation data
     annotation_count, annotations = viewer3d.count_polygons()
     # print(f'====annotation_count={annotation_count}, annotations={annotations}')
 
-    # 获取多边形数据
+    # Get polygon data
     polygon_count, polygons = viewer3d.count_polygons()
     
-    # 清空并更新右侧列表
+    # Clear and update right side list
     rect_list = viewer3d.side_panel.findChild(QListWidget)
     rect_list.clear()
 
     for idx, ann in enumerate(annotations, 1):
-        item_text = f"矩形 {idx} [Sagittal] - annotation: {ann.get('text','')}" + \
-            f"多边形 {idx} [{ann['layer']}] - {len(ann['coordinates'])}顶点 -{viewer3d.annotation_edit.text()}"
+        item_text = f"Rectangle {idx} [Sagittal] - annotation: {ann.get('text','')}" + \
+            f"Polygon {idx} [{ann['layer']}] - {len(ann['coordinates'])} vertices -{viewer3d.annotation_edit.text()}"
             
         item = QListWidgetItem(item_text)
         rect_list.addItem(item)

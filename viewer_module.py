@@ -7,10 +7,10 @@ import napari
 from napari import Viewer
 from napari.layers import Image, Points
 import os
-from qtpy.QtWidgets import QListWidget  # 新增导入
-from datetime import datetime  # 新增导入
-import sounddevice as sd  # 新增导入
-from scipy.io.wavfile import write as write_wav  # 新增导入
+from qtpy.QtWidgets import QListWidget 
+from datetime import datetime 
+import sounddevice as sd 
+from scipy.io.wavfile import write as write_wav 
 
 class ViewerUI:
     def __init__(self, image_array, metadata, filepath):
@@ -33,68 +33,68 @@ class ViewerUI:
         self.side_panel = QWidget()
         layout = QVBoxLayout()
         
-        # 矩形列表
+        # Rectangle list
         self.rect_list = QListWidget()
         self.rect_list.itemClicked.connect(self._on_rect_selected)
-        layout.addWidget(QLabel("标注矩形列表"))
+        layout.addWidget(QLabel("Rectangle List"))
         layout.addWidget(self.rect_list)
         
-        # 录音控制
-        self.audio_btn = QPushButton("开始录音")
+        # Audio control
+        self.audio_btn = QPushButton("Start Recording")
         self.audio_btn.clicked.connect(self.toggle_audio_recording)
         layout.addWidget(self.audio_btn)
 
-        # 文本注释输入框
+        # Text annotation input box
         self.annotation_edit = QLineEdit()
-        self.annotation_edit.setPlaceholderText("输入矩形注释...")
-        self.annotation_edit.textChanged.connect(self._update_current_rect_annotation)  # 新增文本变更事件
-        layout.addWidget(QLabel("注释文本"))
+        self.annotation_edit.setPlaceholderText("Enter rectangle annotation...")
+        self.annotation_edit.textChanged.connect(self._update_current_rect_annotation) 
+        layout.addWidget(QLabel("Annotation Text"))
         layout.addWidget(self.annotation_edit)
         
         self.side_panel.setLayout(layout)
-        self.viewer.window.add_dock_widget(self.side_panel, name="标注面板", area='right')
+        self.viewer.window.add_dock_widget(self.side_panel, name="Annotation Panel", area='right')
 
-        # 新增元数据存储
+        # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
     
-    # 新增注释更新方法
+    # Add annotation update method
     def _update_current_rect_annotation(self):
-        """更新当前选中矩形的文本注释"""
+        """Update text annotation of currently selected rectangle"""
         print(f'==self.annotation={self.annotation_edit.text()}')
         current_rect = self.rect_list.currentRow()
         if current_rect != -1 and self.annotation_edit.text():
             print(f'annotation_edit={self.annotation_edit.text()}')
             self.rect_metadata[current_rect]["text"] = self.annotation_edit.text()
-            # 更新列表项显示
+            # Update list item display
             item = self.rect_list.item(current_rect)
-            # item.setText(f"矩形 {current_rect+1} [Sagittal] - {self.annotation_edit.text()}")
+            # item.setText(f"Rectangle {current_rect+1} [Sagittal] - {self.annotation_edit.text()}")
 
     def _on_rect_selected(self, item):
-        """矩形选中事件"""
+        """Rectangle selection event"""
         rect_id = self.rect_list.row(item)
         self.annotation_edit.setText(self.rect_metadata.get(rect_id, {}).get("text", ""))
 
     def on_rect_item_clicked(self, item):
-        """处理列表项双击事件"""
-        rect_id = item.data(Qt.UserRole)  # 修改获取方式
-        if rect_id is None:  # 添加空值校验
+        """Handle list item double click event"""
+        rect_id = item.data(Qt.UserRole)  # Modified retrieval method
+        if rect_id is None:  # Add null value validation
             print("Error: Invalid rect_id")
             return
             
-        # 添加元数据存在性检查
+        # Check if metadata exists
         if rect_id not in self.rect_metadata:
             self.rect_metadata[rect_id] = {"text": "", "audio": "", "coords": []}
             
         text, ok = QInputDialog.getText(
-            self.viewer.window._qt_window,  # 修正父窗口引用
-            "添加注释",
-            "请输入矩形注释:", 
+            self.viewer.window._qt_window,  # Fix parent window reference
+            "Add Annotation",
+            "Please enter rectangle annotation:", 
             text=self.rect_metadata[rect_id].get("text", "")
         )
         
         if ok and text:
             self.rect_metadata[rect_id]["text"] = text
-            item.setText(f"矩形 {rect_id+1} [Sagittal] - {text[:20]}{'...' if len(text)>20 else ''}")
+            item.setText(f"rectangle {rect_id+1} [Sagittal] - {text[:20]}{'...' if len(text)>20 else ''}")
         
     def _create_sliders(self):
         self.slider_container = QWidget()
@@ -319,15 +319,15 @@ class ViewerUI:
             previous_length = current_length
     
     def toggle_audio_recording(self):
-        """切换录音状态"""
-        # 获取当前选中矩形ID
+        """Toggle audio recording status"""
+        # Get current selected rectangle ID
         self.current_rect_id = self.rect_list.currentRow()
         if self.current_rect_id == -1:
-            self.status_label.setText("请先选择要绑定的矩形")
+            self.status_label.setText("Please select a rectangle to bind first")
             return
 
     def _record_audio(self):
-        """录音线程"""
+        """Audio recording thread"""
         fs = 44100
         self.audio_frames = []
         
@@ -342,9 +342,9 @@ class ViewerUI:
         
         if self.audio_frames:
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            filename = f"{RECORD_PATH}{self.image_name}_rect_{self.current_rect_id}_{timestamp}.wav"  # 修改文件名
+            filename = f"{RECORD_PATH}{self.image_name}_rect_{self.current_rect_id}_{timestamp}.wav"  # Modify filename
             write_wav(filename, fs, np.concatenate(self.audio_frames))
-            # 保存录音文件路径到元数据
+            # Save audio file path to metadata
             if self.current_rect_id is not None:
                 self.rect_metadata[self.current_rect_id]["audio"] = filename
 
@@ -358,28 +358,28 @@ class ViewerUI:
         return self.status_label
 
     def count_polygons(self):
-        """统计多边形和矩形注释"""
+        """Count polygons and rectangle annotations"""
         polygons = []
         print(f'metadata={self.rect_metadata}')
-        # 添加矩形注释处理
+        # Add rectangle annotation processing
         for layer in self.viewer.layers:
             if isinstance(layer, napari.layers.Shapes):
                 for i, shape in enumerate(layer.data):
-                    # 处理矩形注释
+                    # Process rectangle annotations
                     if layer.shape_type == 'rectangle':
-                        rect_id = len(self.rect_metadata)  # 获取当前矩形ID
-                        item_text = f"矩形 {rect_id+1} [{layer.name}] - 注释: {self.rect_metadata.get(rect_id,{}).get('text','')}"
+                        rect_id = len(self.rect_metadata)  # Get current rectangle ID
+                        item_text = f"Rectangle {rect_id+1} [{layer.name}] - Annotation: {self.rect_metadata.get(rect_id,{}).get('text','')}"
                         polygons.append({
-                            "layer": "矩形注释",
+                            "layer": "Rectangle Annotation",
                             "coordinates": shape,
                             "text": self.rect_metadata.get(rect_id,{}).get('text','')
                         })
             if isinstance(layer, napari.layers.Shapes) and layer.ndim == 2:
                 for shape in layer.data:
-                    # 检查是否为多边形且至少有3个顶点
+                    # Check if it's a polygon with at least 3 vertices
                     if len(shape) >= 3:
                         # print('=is polygen')
-                        # 转换坐标系（考虑图层的缩放和平移） TODO: 这个坐标系的计算存疑
+                        # Convert coordinates (considering layer scaling and translation) TODO: This coordinate system calculation is questionable
                         scaled_coords = [
                             (coord * layer.scale + layer.translate).tolist()
                             for coord in shape
