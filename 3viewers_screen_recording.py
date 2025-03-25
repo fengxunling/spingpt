@@ -249,20 +249,18 @@ def refresh_polygons(viewer):
     print('===type C key===')
     # Get all annotation data
     annotation_count, annotations = viewer3d.count_polygons()
-    # print(f'====annotation_count={annotation_count}, annotations={annotations}')
-
-    # Get polygon data
-    polygon_count, polygons = viewer3d.count_polygons()
     
     # Clear and update right side list
     rect_list = viewer3d.side_panel.findChild(QListWidget)
     rect_list.clear()
 
     for idx, ann in enumerate(annotations, 1):
-        item_text = f"Rectangle {idx} [Sagittal] - annotation: {ann.get('text','')}" + \
-            f"Polygon {idx} [{ann['layer']}] - {len(ann['coordinates'])} vertices -{viewer3d.annotation_edit.text()}"
+        item_text = f"Rectangle {idx} [Sagittal]\nAnnotation: {ann.get('text','')}\n" + \
+            f"[{ann['layer']}]\nVertices: {len(ann['coordinates'])}\n" + \
+            f"Note: {viewer3d.annotation_edit.text()}"
             
         item = QListWidgetItem(item_text)
+        item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
         rect_list.addItem(item)
 
 

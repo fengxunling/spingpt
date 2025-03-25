@@ -29,7 +29,7 @@ class ViewerUI:
         self._setup_toolbar(filepath)
     
     def _init_side_panel(self):
-        """初始化右侧标注面板"""
+        """Initialize right-side annotation panel"""
         self.side_panel = QWidget()
         layout = QVBoxLayout()
         
