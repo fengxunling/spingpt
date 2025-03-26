@@ -281,20 +281,6 @@ class ViewerUI:
         # print('axial_slice:', axial_slice.shape)
         # print('coronal_slice:', coronal_slice.shape)
         # print('sagittal_slice:', sagittal_slice.shape)
-        self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
-        self.coronal_layer = self.viewer.add_image(coronal_slice, name='Coronal', visible=False)
-        self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
-
-        # # Set grid layout (hard-coded)
-        # self.axial_layer = self.viewer.layers['Axial'] # get the target layer
-        # self.axial_layer.translate = (-50, -100)  # move the layer to the specified position
-        # self.axial_layer.scale = [0.4, 0.4] 
-        # self.sagittal_layer = self.viewer.layers['Sagittal'] 
-        # self.sagittal_layer.translate = (-20, -60)  
-        # self.sagittal_layer.scale = [0.2, 0.2] 
-        # self.coronal_layer = self.viewer.layers['Coronal'] 
-        # self.coronal_layer.translate = (-110, 90) 
-        # self.coronal_layer.scale = [0.4, 0.4] 
 
         # 动态设置图层参数
         if 'sagittal' in self.visible_views:
@@ -338,15 +324,6 @@ class ViewerUI:
         if 'axial' in self.visible_views:
             axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
             self.axial_layer.data = axial_slice
-        
-        # update the layer data
-        self.axial_layer.data = axial_slice
-        # self.coronal_layer.data = coronal_slice
-        self.sagittal_layer.data = sagittal_slice
-
-        self.axial_layer.data = axial_slice 
-        # self.coronal_layer.data = coronal_slice
-        self.sagittal_layer.data = sagittal_slice
         
         # refresh the display
         self.axial_layer.refresh()  
