@@ -108,6 +108,12 @@ class ViewerUI:
 
     def apply_layout_settings(self):
         """应用基于界面尺寸的布局设置"""
+        layout_setting = None # ['horizontal', 'vertical']
+        if self.image_array.shape[1] > self.image_array.shape[2]:
+            layout_setting = 'vertical'
+        else:
+            layout_setting = 'horizontal'
+
         # 获取Qt视图实际渲染尺寸
         canvas = self.viewer.window.qt_viewer.canvas.size
         window_height = canvas[0] 
@@ -119,14 +125,22 @@ class ViewerUI:
         viewport_height = window_height // 2
         
         # 根据图像各维度尺寸和视图区域比例计算缩放
-        z_scale = viewport_width / self.image_array.shape[0]
-        y_scale = viewport_height / self.image_array.shape[1] 
-        x_scale = viewport_height / self.image_array.shape[2]
+        if layout_setting == 'vertical':
+            z_scale_pre = viewport_width / self.image_array.shape[0]
+            y_scale_pre = viewport_height / (self.image_array.shape[1] + self.image_array.shape[0])
+            x_scale_pre = viewport_height / self.image_array.shape[2]
+        elif layout_setting == 'horizontal':
+            z_scale_pre = viewport_width / self.image_array.shape[0]
+            y_scale_pre = viewport_width / self.image_array.shape[1]
+            x_scale_pre = viewport_width / (self.image_array.shape[2] + self.image_array.shape[1])
+        z_scale = min(z_scale_pre, y_scale_pre, x_scale_pre)
+        y_scale = min(z_scale_pre, y_scale_pre, x_scale_pre)
+        x_scale = min(z_scale_pre, y_scale_pre, x_scale_pre)
         print(f'z_scale={z_scale}, y_scale={y_scale}, x_scale={x_scale}')
         
         self.base_scale = (z_scale, y_scale, x_scale)
         
-        # 自动计算偏移量（居中显示）
+        # 自动计算偏移量（居中显示） # TODO: change
         self.translate_offset = {
             'sagittal': (-self.image_array.shape[1]//2 * y_scale, 
                         -self.image_array.shape[2]//2 * x_scale),
@@ -141,6 +155,8 @@ class ViewerUI:
         if hasattr(self, 'axial_layer'):
             self.axial_layer.scale = self.base_scale[1:]
             self.axial_layer.translate = self.translate_offset['axial']
+
+        # TODO: 添加基于horizontal/vertical的布局设置
         
         
     # Add annotation update method
@@ -292,12 +308,12 @@ class ViewerUI:
         initial_z, initial_y, initial_x = self.viewer.dims.current_step
 
         # Add orthogonal 2D slice layers
-        axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
-        coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
-        sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
-        # print('axial_slice:', axial_slice.shape)
-        # print('coronal_slice:', coronal_slice.shape)
-        # print('sagittal_slice:', sagittal_slice.shape)
+        # axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
+        # coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
+        # sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
+        axial_slice = self.image_array[initial_z, :, :]
+        coronal_slice = self.image_array[:, initial_y, :]
+        sagittal_slice = self.image_array[:, :, initial_x]
 
         # 动态设置图层参数
         if 'sagittal' in self.visible_views:
@@ -337,10 +353,12 @@ class ViewerUI:
         if 'sagittal' in self.visible_views:
             sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
             self.sagittal_layer.data = sagittal_slice
+            print(f'sagittal_slice.shape={sagittal_slice.shape}')
         
         if 'axial' in self.visible_views:
             axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
             self.axial_layer.data = axial_slice
+            print(f'axial_slice.shape={axial_slice.shape}')
         
         # refresh the display
         self.axial_layer.refresh()  
