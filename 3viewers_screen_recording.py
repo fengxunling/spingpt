@@ -140,6 +140,7 @@ points_layer.events.data.connect(on_points_changed)
 
 def on_shape_added(event):
     """Shape addition event handler"""
+
     if not event.source.data:
         print("Warning: Received empty shape data event")
         return
@@ -158,22 +159,26 @@ def on_shape_added(event):
         log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
         recorder.add_annotation(log_text)  # Call recorder's recording method
 
+        # 获取当前切片位置
+        current_z, current_y, current_x = viewer.dims.current_step
+        
+        # 在元数据中新增切片索引记录
+        viewer3d.rect_metadata[rect_id] = {
+            "text": "",
+            "audio": "",
+            "coords": physical_coord.tolist(),
+            "slice_indices": (current_z, current_y, current_x)  # 新增切片索引
+        }
+
+        # Create list item with user data (rect_id)
+        item = QListWidgetItem(f"add points...")
+        item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
+        viewer3d.rect_list.addItem(item)
+
     except IndexError as e:
         print(f"Error processing shape data: {str(e)}")
     except KeyError as e:
         print(f"Sagittal layer not found: {str(e)}")
-
-    # Initialize metadata
-    rect_id = len(viewer3d.rect_metadata)
-    viewer3d.rect_metadata[rect_id] = {
-        "text": "",  # Initialize as empty string
-        "audio": "",
-        "coords": physical_coord.tolist()
-    }
-    # Create list item with user data (rect_id)
-    item = QListWidgetItem(f"add points...")
-    item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
-    viewer3d.rect_list.addItem(item)
     
     # Connect double-click event (should be set during ViewerUI initialization)
     viewer3d.rect_list.itemDoubleClicked.connect(viewer3d.on_rect_item_clicked)

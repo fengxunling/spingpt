@@ -124,10 +124,28 @@ class ViewerUI:
 
     def on_rect_item_clicked(self, item):
         """Handle list item double click event"""
-        rect_id = item.data(Qt.UserRole)  # Modified retrieval method
-        if rect_id is None:  # Add null value validation
-            print("Error: Invalid rect_id")
+        rect_id = self.rect_list.row(item)
+        if rect_id < 0 or rect_id >= len(self.rect_metadata):
+            print(f"Error: Invalid rect_id {rect_id}")
             return
+            
+        try:
+            # 直接获取保存的切片索引
+            z_index, y_index, x_index = self.rect_metadata[rect_id]["slice_indices"]
+            
+            # 安全切换切片
+            z_index = np.clip(z_index, 0, self.image_array.shape[0]-1)
+            y_index = np.clip(y_index, 0, self.image_array.shape[1]-1)
+            x_index = np.clip(x_index, 0, self.image_array.shape[2]-1)
+            
+            # 更新切片位置
+            self.viewer.dims.current_step = (z_index, y_index, x_index)
+            # 同步滑块位置
+            self.z_slider.setValue(z_index)
+            self.y_slider.setValue(y_index)
+            self.x_slider.setValue(x_index)
+        except KeyError as e:
+            print(f"Metadata missing: {str(e)}")
             
         # Check if metadata exists
         if rect_id not in self.rect_metadata:
