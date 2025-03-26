@@ -114,10 +114,7 @@ def main():
         }
 
     # 应用缩放参数到视图
-    viewer3d.apply_layout_settings(
-        base_scale=calculate_base_scale(image_array.shape, viewer.window.qt_viewer.canvas.size),
-        translate_offset=calculate_translate_offset(image_array.shape)
-    )
+    viewer3d.apply_layout_settings()
 
     def update_slices(event):
         viewer3d._update_slices(event)

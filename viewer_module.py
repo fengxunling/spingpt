@@ -98,9 +98,7 @@ class ViewerUI:
         ai_layout.addWidget(self.ai_response)
 
         layout.addLayout(ai_layout)
-        # --- End of addition ---
 
-        
         # Add annotation list
         self.side_panel.setLayout(layout)
         self.viewer.window.add_dock_widget(self.side_panel, name="Annotation Panel", area='right')
@@ -108,23 +106,42 @@ class ViewerUI:
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
 
-    def apply_layout_settings(self, base_scale, translate_offset):
-        """应用动态布局参数"""
-        self.base_scale = base_scale
-        self.translate_offset = translate_offset
+    def apply_layout_settings(self):
+        """应用基于界面尺寸的布局设置"""
+        # 获取Qt视图实际渲染尺寸
+        canvas = self.viewer.window.qt_viewer.canvas.size
+        window_height = canvas[0] 
+        window_width = canvas[1]
+        print(f'==window_width={window_width}')
+        print(f'==window_height={window_height}')   
+        # 动态计算缩放比例（基于界面尺寸）
+        viewport_width = window_width // 2
+        viewport_height = window_height // 2
         
-        # 更新矢状面图层
+        # 根据图像各维度尺寸和视图区域比例计算缩放
+        z_scale = viewport_width / self.image_array.shape[0]
+        y_scale = viewport_height / self.image_array.shape[1] 
+        x_scale = viewport_height / self.image_array.shape[2]
+        print(f'z_scale={z_scale}, y_scale={y_scale}, x_scale={x_scale}')
+        
+        self.base_scale = (z_scale, y_scale, x_scale)
+        
+        # 自动计算偏移量（居中显示）
+        self.translate_offset = {
+            'sagittal': (-self.image_array.shape[1]//2 * y_scale, 
+                        -self.image_array.shape[2]//2 * x_scale),
+            'axial': (-self.image_array.shape[1]//2 * y_scale, 0)
+        }
+        
+        # 应用参数到图层（保持原有逻辑）
         if hasattr(self, 'sagittal_layer'):
-            self.sagittal_layer.scale = base_scale[1:]
-            self.sagittal_layer.translate = translate_offset['sagittal']
+            self.sagittal_layer.scale = self.base_scale[1:]
+            self.sagittal_layer.translate = self.translate_offset['sagittal']
         
-        # 更新横断面图层
         if hasattr(self, 'axial_layer'):
-            self.axial_layer.scale = base_scale[1:]
-            self.axial_layer.translate = translate_offset['axial']
+            self.axial_layer.scale = self.base_scale[1:]
+            self.axial_layer.translate = self.translate_offset['axial']
         
-        # # 刷新视图
-        # self.viewer.window.qt_viewer.canvas.update()
         
     # Add annotation update method
     def _update_current_rect_annotation(self):
