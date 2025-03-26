@@ -147,20 +147,6 @@ class ViewerUI:
         except KeyError as e:
             print(f"Metadata missing: {str(e)}")
             
-        # Check if metadata exists
-        if rect_id not in self.rect_metadata:
-            self.rect_metadata[rect_id] = {"text": "", "audio": "", "coords": []}
-            
-        text, ok = QInputDialog.getText(
-            self.viewer.window._qt_window,  # Fix parent window reference
-            "Add Annotation",
-            "Please enter rectangle annotation:", 
-            text=self.rect_metadata[rect_id].get("text", "")
-        )
-        
-        if ok and text:
-            self.rect_metadata[rect_id]["text"] = text
-            item.setText(f"rectangle {rect_id+1} [Sagittal] - {text[:20]}{'...' if len(text)>20 else ''}")
         
     def _create_sliders(self):
         self.slider_container = QWidget()
@@ -385,75 +371,74 @@ class ViewerUI:
             previous_length = current_length
     
     def toggle_audio_recording(self):
-        """切换录音状态"""
+        """Toggle audio recording status"""
         if not self.audio_recording:
-            # 开始录音
+            # Start recording
             self.audio_frames = []
             self.audio_recording = True
-            self.record_btn.setText("停止录音")
-            self.fs = 44100  # 采样率
+            self.record_btn.setText("Stop Recording")
+            self.fs = 44100  # Sample rate
             
-            # 创建录音线程
+            # Create recording thread
             self.audio_thread = threading.Thread(target=self._record_audio)
             self.audio_thread.start()
         else:
-            # 停止录音
+            # Stop recording
             self.audio_recording = False
-            self.record_btn.setText("开始录音")
+            self.record_btn.setText("Start Recording")
             self.save_and_transcribe_audio()
 
     def _record_audio(self):
-        """录音线程"""
+        """Recording thread"""
         with sd.InputStream(samplerate=self.fs, channels=1, callback=self.audio_callback):
             while self.audio_recording:
                 time.sleep(0.1)
 
     def audio_callback(self, indata, frames, time, status):
-        """音频回调"""
+        """Audio callback"""
         if status:
             print(status)
         self.audio_frames.append(indata.copy())
 
     def save_and_transcribe_audio(self):
-        """保存音频并转写"""
+        """Save audio and transcribe"""
         if not self.audio_frames:
             return
         
-        # 拼接音频数据
+        # Concatenate audio data
         audio_data = np.concatenate(self.audio_frames, axis=0)
         
-        # 生成文件名
+        # Generate filename
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         audio_path = os.path.join(self.RECORD_PATH, f"recording_{timestamp}.wav")
         
-        # 保存WAV文件
+        # Save WAV file
         write(audio_path, self.fs, audio_data)
         
-        # 调用转写功能
+        # Call transcription function
         txt_path = audio_path.replace('.wav', '.txt')
         transcribe_audio(audio_path, txt_path)
         
-        # 将结果加载到文本框
+        # Load result to text box
         with open(txt_path, 'r', encoding='utf-8') as f:
             self.annotation_edit.setText(f.read())
 
     def _handle_ai_command(self):
-        """处理AI指令"""
-        
+        """Handle AI commands"""
         command = self.ai_input.text()
         if not command:
             return
         
-        # 处理返回值的类型校验
+        # Type validation for return values
         try:
-            number, axis = generate_napari_code(command)  # 现在返回的是 (int, str)
+            number, axis = generate_napari_code(command)  # Returns (int, str)
             if axis is None:
                 raise ValueError("Invalid axis")
                 
-            # 更新响应显示
-            self.ai_response.setText(f"切片位置: {number}, 轴向: {axis.upper()}")
+            # Update response display
+            self.ai_response.setText(f"Slice position: {number}, Axis: {axis.upper()}")
             
-            # 根据轴向设置滑块值
+            # Set slider value based on axis
             if axis == 'x':
                 self.x_slider.setValue(number)
             elif axis == 'y':
@@ -462,7 +447,7 @@ class ViewerUI:
                 self.z_slider.setValue(number)
                 
         except (ValueError, TypeError) as e:
-            self.ai_response.setText(f"指令错误: {str(e)}")
+            self.ai_response.setText(f"Command error: {str(e)}")
         
 
     def get_viewer(self):

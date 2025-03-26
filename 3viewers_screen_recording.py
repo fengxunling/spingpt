@@ -159,15 +159,17 @@ def on_shape_added(event):
         log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
         recorder.add_annotation(log_text)  # Call recorder's recording method
 
-        # 获取当前切片位置
+        # Get current slice position
         current_z, current_y, current_x = viewer.dims.current_step
+        print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
         
-        # 在元数据中新增切片索引记录
+        # Define rect_id before metadata initialization
+        rect_id = len(viewer3d.rect_metadata)  # Add rect_id definition
         viewer3d.rect_metadata[rect_id] = {
             "text": "",
             "audio": "",
             "coords": physical_coord.tolist(),
-            "slice_indices": (current_z, current_y, current_x)  # 新增切片索引
+            "slice_indices": (current_z, current_y, current_x)
         }
 
         # Create list item with user data (rect_id)
