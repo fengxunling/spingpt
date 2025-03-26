@@ -9,7 +9,6 @@ file_path = os.path.dirname(os.path.realpath(__file__))
 def generate_napari_code(prompt):
     """Generate executable napari code"""
     
-    # 新增意图判断prompt
     intent_response = ollama.chat(
         model='deepseek-r1:7b',
         messages=[{

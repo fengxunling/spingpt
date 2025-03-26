@@ -50,7 +50,7 @@ class ViewerUI:
         # audio button
         audio_layout = QHBoxLayout()
         self.record_btn = QPushButton("start recording")
-        self.record_btn.setObjectName("audio_record_btn")  # 添加对象名称
+        self.record_btn.setObjectName("audio_record_btn")  # add object name
         self.record_btn.clicked.connect(self.toggle_audio_recording)
         self.record_btn.setMinimumWidth(120)
         audio_layout.addStretch()
@@ -99,12 +99,6 @@ class ViewerUI:
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
 
-        # Get all items in the layout
-        layout = self.side_panel.layout()
-        for i in range(layout.count()):
-            item = layout.itemAt(i)
-            if item:
-                print(f'Layout elements: {item.widget()}')
     
     # Add annotation update method
     def _update_current_rect_annotation(self):
@@ -210,11 +204,9 @@ class ViewerUI:
         
         # Navigation buttons (prev_btn/next_btn logic from original tmp.py)
         self.prev_btn = QPushButton("Previous")
+        self.prev_btn.setObjectName("prev_btn")  
         self.next_btn = QPushButton("Next")
-        
-        # Input field and submit button (input_layout logic from original tmp.py)
-        self.annotation_input = QLineEdit()
-        self.submit_btn = QPushButton("Submit")
+        self.next_btn.setObjectName("next_btn")  
         
         # Get main layout reference
         main_layout = self.slider_container.layout()
@@ -224,8 +216,6 @@ class ViewerUI:
         
         # Add navigation buttons and input field below sliders
         main_layout.addLayout(self._create_nav_buttons_layout())
-        main_layout.addLayout(self._create_input_layout())
-        
         
         # Add dock widget (original axis_controls_dock logic)
         self.viewer.window.add_dock_widget(
@@ -240,13 +230,6 @@ class ViewerUI:
         layout = QHBoxLayout()
         layout.addWidget(self.prev_btn)
         layout.addWidget(self.next_btn)
-        return layout
-
-    def _create_input_layout(self):
-        """Create input field layout"""
-        layout = QHBoxLayout()
-        layout.addWidget(self.annotation_input)
-        layout.addWidget(self.submit_btn)
         return layout
 
     def _setup_layers(self):
