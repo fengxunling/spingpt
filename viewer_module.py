@@ -84,6 +84,7 @@ class ViewerUI:
         # Result display
         self.ai_response_label = QLabel("Model Response:")
         self.ai_response = QLabel()
+        self.ai_response.setWordWrap(True)  # add auto wrap
         ai_layout.addWidget(self.ai_response_label)
         ai_layout.addWidget(self.ai_response)
 
@@ -130,17 +131,17 @@ class ViewerUI:
             return
             
         try:
-            # 直接获取保存的切片索引
+            # Get saved slice indices
             z_index, y_index, x_index = self.rect_metadata[rect_id]["slice_indices"]
             
-            # 安全切换切片
+            # Safely switch slices
             z_index = np.clip(z_index, 0, self.image_array.shape[0]-1)
             y_index = np.clip(y_index, 0, self.image_array.shape[1]-1)
             x_index = np.clip(x_index, 0, self.image_array.shape[2]-1)
             
-            # 更新切片位置
+            # Update slice position
             self.viewer.dims.current_step = (z_index, y_index, x_index)
-            # 同步滑块位置
+            # Sync slider positions
             self.z_slider.setValue(z_index)
             self.y_slider.setValue(y_index)
             self.x_slider.setValue(x_index)
@@ -429,25 +430,35 @@ class ViewerUI:
         if not command:
             return
         
-        # Type validation for return values
         try:
-            number, axis = generate_napari_code(command)  # Returns (int, str)
-            if axis is None:
-                raise ValueError("Invalid axis")
-                
-            # Update response display
-            self.ai_response.setText(f"Slice position: {number}, Axis: {axis.upper()}")
+            # Get new dictionary format result
+            result = generate_napari_code(command)
             
-            # Set slider value based on axis
-            if axis == 'x':
-                self.x_slider.setValue(number)
-            elif axis == 'y':
-                self.y_slider.setValue(number)
-            elif axis == 'z':
-                self.z_slider.setValue(number)
+            if result['type'] == 'slice_adjustment':
+                # Handle slice adjustment
+                number = result['number']
+                axis = result['axis']
+                self.ai_response.setText(f"Slice position: {number}, Axis: {axis.upper()}")
                 
-        except (ValueError, TypeError) as e:
-            self.ai_response.setText(f"Command error: {str(e)}")
+                # Set slider based on axis
+                if axis == 'x':
+                    self.x_slider.setValue(number)
+                elif axis == 'y':
+                    self.y_slider.setValue(number)
+                elif axis == 'z':
+                    self.z_slider.setValue(number)
+                    
+            elif result['type'] == 'general_response':
+                # Display complete model response
+                self.ai_response.setText(f"Model response:\n{result['content']}")
+                
+            elif result['type'] == 'error':
+                self.ai_response.setText(f"Error: {result['message']}")
+                
+        except KeyError as e:
+            self.ai_response.setText(f"Response format error: Missing key field {str(e)}")
+        except Exception as e:
+            self.ai_response.setText(f"Command processing failed: {str(e)}")
         
 
     def get_viewer(self):
