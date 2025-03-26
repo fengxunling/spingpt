@@ -21,11 +21,11 @@ def generate_napari_code(prompt):
     intent_match = re.search(r'(.*\W)?intent:\s*(\w+)(?!.*intent:\s*\w+)', 
                            intent, re.IGNORECASE | re.DOTALL)
     if intent_match:
-        intent = intent_match.group(2).lower()  # 提取第二个分组
-        print(f'==最后匹配到的意图: {intent}')
+        intent = intent_match.group(2).lower()  # extract the second group
+        print(f'==Last matched intent: {intent}')
     else:
         intent = raw_response.lower()
-        print('==未找到intent字段==')
+        print('==Intent field not found==')
 
     if 'adjust_slice' in intent:
         print(f'=adjust_slice!')

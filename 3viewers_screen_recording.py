@@ -51,14 +51,14 @@ recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=
 IMAGE_PATH = os.path.dirname(__file__)+'/data/'
 IMAGE_LIST = [
     f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz", # shape: (80, 640, 640)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz", # shape: (1024, 368, 192)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz", # shape: (1024, 368, 192)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
+    # # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
 ]
 
 def plot():
@@ -91,9 +91,34 @@ def main():
     image_array = layer_data[0][0]
     metadata = layer_data[0][1]
 
-
-    # Create Viewer and add image layer (hidden)
     viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH)
+    # 获取viewer对象
+    viewer = viewer3d.get_viewer()
+
+    def calculate_base_scale(image_shape, screen_size):
+        """根据图像尺寸和屏幕空间计算基础缩放比例"""
+        screen_width = screen_size[0] // 2  
+        screen_height = screen_size[1] // 2  
+        
+        base_scale_z = screen_width / image_shape[0]
+        base_scale_xy = min(
+            screen_width / image_shape[1], 
+            screen_height / image_shape[2]
+        )
+        return (base_scale_z, base_scale_xy, base_scale_xy)
+
+    def calculate_translate_offset(data_shape):
+        return {
+            'sagittal': (-data_shape[1]//2, -data_shape[2]//2),  
+            'axial': (-data_shape[1]//2, 0)                      
+        }
+
+    # 应用缩放参数到视图
+    viewer3d.apply_layout_settings(
+        base_scale=calculate_base_scale(image_array.shape, viewer.window.qt_viewer.canvas.size),
+        translate_offset=calculate_translate_offset(image_array.shape)
+    )
+
     def update_slices(event):
         viewer3d._update_slices(event)
     def on_points_changed(event):

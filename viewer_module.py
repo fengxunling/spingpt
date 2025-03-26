@@ -18,17 +18,26 @@ from utils.llm import generate_napari_code
 import re
 
 class ViewerUI:
-    def __init__(self, image_array, metadata, filepath, RECORD_PATH):
+    def __init__(self, image_array, metadata, filepath, RECORD_PATH, 
+                 base_scale=(1,1,1), translate_offset=None, 
+                 visible_views=['sagittal', 'axial']):
         self.viewer = Viewer()
         self.image_array = image_array
         self.metadata = metadata
         self.RECORD_PATH = RECORD_PATH
+        self.visible_views = visible_views
+        self.base_scale = base_scale
+        self.translate_offset = translate_offset or {
+            'sagittal': (0,0,0),
+            'axial': (0,0,0)
+        }
         self._init_ui(filepath)
         self._setup_layers()
         self._connect_events()
         self._init_side_panel()
         self.audio_recording = False 
         self.audio_frames = []
+        
 
     def _init_ui(self, filepath):
         """Initialize viewer interface components"""
@@ -99,7 +108,24 @@ class ViewerUI:
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
 
-    
+    def apply_layout_settings(self, base_scale, translate_offset):
+        """应用动态布局参数"""
+        self.base_scale = base_scale
+        self.translate_offset = translate_offset
+        
+        # 更新矢状面图层
+        if hasattr(self, 'sagittal_layer'):
+            self.sagittal_layer.scale = base_scale[1:]
+            self.sagittal_layer.translate = translate_offset['sagittal']
+        
+        # 更新横断面图层
+        if hasattr(self, 'axial_layer'):
+            self.axial_layer.scale = base_scale[1:]
+            self.axial_layer.translate = translate_offset['axial']
+        
+        # # 刷新视图
+        # self.viewer.window.qt_viewer.canvas.update()
+        
     # Add annotation update method
     def _update_current_rect_annotation(self):
         """Update text annotation of currently selected rectangle"""
@@ -259,16 +285,32 @@ class ViewerUI:
         self.coronal_layer = self.viewer.add_image(coronal_slice, name='Coronal', visible=False)
         self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
 
-        # Set grid layout
-        self.axial_layer = self.viewer.layers['Axial'] # get the target layer
-        self.axial_layer.translate = (-50, -100)  # move the layer to the specified position
-        self.axial_layer.scale = [0.4, 0.4] 
-        self.sagittal_layer = self.viewer.layers['Sagittal'] 
-        self.sagittal_layer.translate = (-20, -60)  
-        self.sagittal_layer.scale = [0.2, 0.2] 
-        self.coronal_layer = self.viewer.layers['Coronal'] 
-        self.coronal_layer.translate = (-110, 90) 
-        self.coronal_layer.scale = [0.4, 0.4] 
+        # # Set grid layout (hard-coded)
+        # self.axial_layer = self.viewer.layers['Axial'] # get the target layer
+        # self.axial_layer.translate = (-50, -100)  # move the layer to the specified position
+        # self.axial_layer.scale = [0.4, 0.4] 
+        # self.sagittal_layer = self.viewer.layers['Sagittal'] 
+        # self.sagittal_layer.translate = (-20, -60)  
+        # self.sagittal_layer.scale = [0.2, 0.2] 
+        # self.coronal_layer = self.viewer.layers['Coronal'] 
+        # self.coronal_layer.translate = (-110, 90) 
+        # self.coronal_layer.scale = [0.4, 0.4] 
+
+        # 动态设置图层参数
+        if 'sagittal' in self.visible_views:
+            self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
+            self.sagittal_layer.scale = self.base_scale[1:]  # 使用动态缩放
+            self.sagittal_layer.translate = self.translate_offset['sagittal'][1:]
+        
+        if 'axial' in self.visible_views:
+            self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
+            self.axial_layer.scale = self.base_scale[1:]     # 使用动态缩放
+            self.axial_layer.translate = self.translate_offset['axial'][1:]
+
+        # 设置水平布局
+        self.canvas = self.viewer.window.qt_viewer.canvas
+        self.canvas.layout = QHBoxLayout()
+        # self.canvas.setLayout(self.canvas.layout)
 
     def _connect_events(self):
         """Connect event handlers"""
@@ -282,27 +324,33 @@ class ViewerUI:
         y = np.clip(self.viewer.dims.current_step[1], 0, self.image_array.shape[1]-1)
         x = np.clip(self.viewer.dims.current_step[2], 0, self.image_array.shape[2]-1)
         
-        # axial view (rotate 90 degrees counterclockwise)
-        axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
+        # # axial view (rotate 90 degrees counterclockwise)
+        # axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
+        # # coronal view (rotate 180 degrees counterclockwise)
+        # coronal_slice = np.fliplr(np.rot90(self.image_array[:, y, :], k=2))
+        # # sagittal view
+        # sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
+
+        if 'sagittal' in self.visible_views:
+            sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
+            self.sagittal_layer.data = sagittal_slice
         
-        # coronal view (rotate 180 degrees counterclockwise)
-        coronal_slice = np.fliplr(np.rot90(self.image_array[:, y, :], k=2))
-        
-        # sagittal view
-        sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
+        if 'axial' in self.visible_views:
+            axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
+            self.axial_layer.data = axial_slice
         
         # update the layer data
         self.axial_layer.data = axial_slice
-        self.coronal_layer.data = coronal_slice
+        # self.coronal_layer.data = coronal_slice
         self.sagittal_layer.data = sagittal_slice
 
         self.axial_layer.data = axial_slice 
-        self.coronal_layer.data = coronal_slice
+        # self.coronal_layer.data = coronal_slice
         self.sagittal_layer.data = sagittal_slice
         
         # refresh the display
         self.axial_layer.refresh()  
-        self.coronal_layer.refresh()
+        # self.coronal_layer.refresh()
         self.sagittal_layer.refresh()
 
         # according to the current slice update the visibility of the points
