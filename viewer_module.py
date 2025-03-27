@@ -18,19 +18,16 @@ from utils.llm import generate_napari_code
 import re
 
 class ViewerUI:
-    def __init__(self, image_array, metadata, filepath, RECORD_PATH, 
-                 base_scale=(1,1,1), translate_offset=None, 
-                 visible_views=['sagittal', 'axial']):
+    def __init__(self, image_array, metadata, filepath, RECORD_PATH, visible_views=['sagittal', 'axial']):
         self.viewer = Viewer()
         self.image_array = image_array
         self.metadata = metadata
         self.RECORD_PATH = RECORD_PATH
         self.visible_views = visible_views
-        self.base_scale = base_scale
-        self.translate_offset = translate_offset or {
-            'sagittal': (0,0,0),
-            'axial': (0,0,0)
-        }
+        self.translate_offset = None
+        self.sagittal_base_scale = None
+        self.axial_base_scale = None
+        self.apply_layout_settings()
         self._init_ui(filepath)
         self._setup_layers()
         self._connect_events()
@@ -110,6 +107,7 @@ class ViewerUI:
         """应用基于界面尺寸的布局设置"""
         # 修改布局方向判断逻辑
         z, y, x = self.image_array.shape[:3]
+        print(f'x={x}, y={y}, z={z}')
         aspect_ratio = (z + x) / y  # 根据Z+X轴总长度与Y轴的比例判断布局
         layout_setting = 'vertical' if aspect_ratio > 1.2 else 'horizontal'
         print(f'自动布局方向: {layout_setting}')
@@ -117,7 +115,8 @@ class ViewerUI:
         # 获取Qt视图实际渲染尺寸
         canvas = self.viewer.window.qt_viewer.canvas.size
         window_width = canvas[1] - 300  # 留出侧边栏空间
-        window_height = canvas[0] - 100  # 留出工具栏空间
+        window_height = canvas[0] - 200  # 留出工具栏空间
+        print(f'window_width={window_width}, window_height={window_height}')
 
         # 计算基础缩放比例（保持宽高比）
         if layout_setting == 'vertical':
@@ -127,37 +126,48 @@ class ViewerUI:
             
             # 矢状面缩放计算（显示X-Y平面）
             sagittal_scale_x = viewport_width / x
-            sagittal_scale_y = viewport_height / y
+            sagittal_scale_y = viewport_height / z
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
+            print(f'sagittal_scale={sagittal_scale}')
             
             # 轴向面缩放计算（显示Z-Y平面）
-            axial_scale_x = viewport_width / z
-            axial_scale_y = viewport_height / y 
+            axial_scale_x = viewport_width / y
+            axial_scale_y = viewport_height / x
             axial_scale = min(axial_scale_x, axial_scale_y)
+            print(f'axial_scale={axial_scale}')
             
             # 统一使用最小缩放保证显示
             final_scale = min(sagittal_scale, axial_scale)
+            print(f'final_scale={final_scale}')
             self.sagittal_base_scale = (final_scale, final_scale, final_scale)
             self.axial_base_scale = (final_scale, final_scale, final_scale)
             
             # 自动计算偏移量（垂直布局）
             self.translate_offset = {
-                'sagittal': (-x * final_scale / 2, -y * final_scale / 2),
-                'axial': (-z * final_scale / 2, -y * final_scale / 2)
+                'sagittal': (-x * final_scale / 2 + 100, -y * final_scale / 2 - 100),
+                'axial': (-z * final_scale / 2 + 100, -y * final_scale / 2 - 100)
             }
             
-        else:  # 水平布局
+        elif layout_setting == 'horizontal':  # 水平布局
             # 水平布局：左右排列，高度相同
             viewport_width = window_width // 2
             viewport_height = window_height
             
             # 矢状面缩放计算
-            sagittal_scale = viewport_height / y
+            sagittal_scale_x = viewport_width / x
+            sagittal_scale_y = viewport_height / z
+            sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
+            print(f'sagittal_scale={sagittal_scale}')
             # 轴向面缩放计算
-            axial_scale = viewport_height / y
+            axial_scale_x = viewport_width / y
+            axial_scale_y = viewport_height / x
+            axial_scale = min(axial_scale_x, axial_scale_y)
+            print(f'axial_scale={axial_scale}')
             
-            self.sagittal_base_scale = (sagittal_scale, sagittal_scale, sagittal_scale)
-            self.axial_base_scale = (axial_scale, axial_scale, axial_scale)
+            final_scale = min(sagittal_scale, axial_scale)/2
+            print(f'final_scale={final_scale}')
+            self.sagittal_base_scale = (final_scale, final_scale, final_scale)
+            self.axial_base_scale = (final_scale, final_scale, final_scale)
             
             # 水平布局偏移计算
             self.translate_offset = {
@@ -165,13 +175,13 @@ class ViewerUI:
                 'axial': (-z * axial_scale / 2, 0)
             }
 
-        # 应用参数到图层
         for view in ['sagittal', 'axial']:
             layer = getattr(self, f'{view}_layer', None)
             if layer:
                 # 使用二维缩放和平移（忽略Z轴）
                 layer.scale = self.sagittal_base_scale[1:] if view == 'sagittal' else self.axial_base_scale[1:]
                 layer.translate = self.translate_offset[view][:2]
+
 
         
         
@@ -334,12 +344,12 @@ class ViewerUI:
         # 动态设置图层参数
         if 'sagittal' in self.visible_views:
             self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
-            self.sagittal_layer.scale = self.base_scale[1:]  # 使用动态缩放
+            self.sagittal_layer.scale = self.sagittal_base_scale[1:]  # 使用动态缩放
             self.sagittal_layer.translate = self.translate_offset['sagittal'][1:]
         
         if 'axial' in self.visible_views:
             self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
-            self.axial_layer.scale = self.base_scale[1:]     # 使用动态缩放
+            self.axial_layer.scale = self.axial_base_scale[1:]     # 使用动态缩放
             self.axial_layer.translate = self.translate_offset['axial'][1:]
 
         # 设置水平布局
