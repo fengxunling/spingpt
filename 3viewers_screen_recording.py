@@ -51,14 +51,14 @@ recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=
 IMAGE_PATH = os.path.dirname(__file__)+'/data/'
 IMAGE_LIST = [
     f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz", # shape: (80, 640, 640)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz", # shape: (1024, 368, 192)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
-    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
-    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz", # shape: (1024, 368, 192)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
+    # # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
 ]
 
 def plot():
@@ -211,8 +211,14 @@ def main():
             
             # Write information to log file
             timestamp = datetime.now().strftime('%H:%M:%S')
-            log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
-            recorder.add_annotation(log_text)  # Call recorder's recording method
+            try:
+                log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
+                recorder.add_annotation(log_text)  # Call recorder's recording method
+            except Exception as e:
+                print(f"Error writing annotation: {str(e)}")
+                if recorder.is_recording:
+                    recorder.stop_recording()
+                    print("Recording stopped due to annotation error")
 
             # Get current slice position
             current_z, current_y, current_x = viewer.dims.current_step
@@ -242,7 +248,7 @@ def main():
 
 
     # ================= bind with key ======================
-    @viewer.bind_key('R')  # press 'R' to start/stop recording
+    @viewer.bind_key('M')  # press to start/stop recording
     def toggle_recording(viewer):
         global status_label
         if not recorder.is_recording:

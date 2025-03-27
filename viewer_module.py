@@ -355,7 +355,6 @@ class ViewerUI:
         # 设置水平布局
         self.canvas = self.viewer.window.qt_viewer.canvas
         self.canvas.layout = QHBoxLayout()
-        # self.canvas.setLayout(self.canvas.layout)
 
     def _connect_events(self):
         """Connect event handlers"""

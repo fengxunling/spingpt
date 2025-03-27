@@ -39,13 +39,26 @@ class ScreenRecorder:
     
     def add_annotation(self, text):
         """Add text annotation"""
-        timestamp = datetime.now()
-        with self.lock:
-            self.text_queue.put({
-                "text": text,
-                "timestamp": timestamp,
-                "expire_time": timestamp.timestamp() + self.MAX_TEXT_DURATION  
-            })
+        try:
+            timestamp = datetime.now()
+            with self.lock:
+                self.text_queue.put({
+                    "text": text,
+                    "timestamp": timestamp,
+                    "expire_time": timestamp.timestamp() + self.MAX_TEXT_DURATION  
+                })
+            
+            # write the annotation to the log
+            if self.is_recording:
+                log_entry = (
+                    f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
+                    f"Content: {text}\n"
+                    "------------------------\n"
+                )
+                with open(self.log_path, "a") as f:
+                    f.write(log_entry)
+        except Exception as e:
+            print(f"Annotation error: {str(e)}")
         
         # write the annotation to the log
         if self.is_recording:
@@ -149,7 +162,7 @@ class ScreenRecorder:
         # get the screen capture object
         with mss() as sct:
             while self.is_recording:
-                try:
+                try:  # 将try块移到循环内部，保持持续捕获
                     # capture the screen region
                     img = np.array(sct.grab(self.monitor))
                     # transfrom to RGB format
@@ -164,7 +177,8 @@ class ScreenRecorder:
                     time.sleep(1/self.FPS)
                 except Exception as e:
                     print(f"capture error: {str(e)}")
-                    break
+                    continue  # 出错后继续循环而不是break退出
+                    # 可添加错误计数和自动重试机制
 
     def stop_recording(self):
         # stop the recording
