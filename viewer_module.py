@@ -114,8 +114,8 @@ class ViewerUI:
 
         # 获取Qt视图实际渲染尺寸
         canvas = self.viewer.window.qt_viewer.canvas.size
-        window_width = canvas[1] - 300  # 留出侧边栏空间
-        window_height = canvas[0] - 200  # 留出工具栏空间
+        window_width = canvas[1] - 200  # 留出侧边栏空间
+        window_height = canvas[0] - 100  # 留出工具栏空间
         print(f'window_width={window_width}, window_height={window_height}')
 
         # 计算基础缩放比例（保持宽高比）
@@ -144,8 +144,8 @@ class ViewerUI:
             
             # 自动计算偏移量（垂直布局）
             self.translate_offset = {
-                'sagittal': (-x * final_scale / 2 + 100, -y * final_scale / 2 - 100),
-                'axial': (-z * final_scale / 2 + 100, -y * final_scale / 2 - 100)
+                'sagittal': (x * final_scale / 2, -y * final_scale / 2 - 100),
+                'axial': (-y * final_scale / 2, -y * final_scale / 2 - 100)
             }
             
         elif layout_setting == 'horizontal':  # 水平布局
@@ -171,8 +171,8 @@ class ViewerUI:
             
             # 水平布局偏移计算
             self.translate_offset = {
-                'sagittal': (-x * sagittal_scale / 2, 0),
-                'axial': (-z * axial_scale / 2, 0)
+                'sagittal': (-x * sagittal_scale / 2, -50),
+                'axial': (-z * axial_scale / 2, -100)
             }
 
         for view in ['sagittal', 'axial']:
@@ -180,7 +180,7 @@ class ViewerUI:
             if layer:
                 # 使用二维缩放和平移（忽略Z轴）
                 layer.scale = self.sagittal_base_scale[1:] if view == 'sagittal' else self.axial_base_scale[1:]
-                layer.translate = self.translate_offset[view][:2]
+                layer.translate = self.translate_offset[view]
 
 
         
@@ -345,12 +345,12 @@ class ViewerUI:
         if 'sagittal' in self.visible_views:
             self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
             self.sagittal_layer.scale = self.sagittal_base_scale[1:]  # 使用动态缩放
-            self.sagittal_layer.translate = self.translate_offset['sagittal'][1:]
+            self.sagittal_layer.translate = self.translate_offset['sagittal']
         
         if 'axial' in self.visible_views:
             self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
             self.axial_layer.scale = self.axial_base_scale[1:]     # 使用动态缩放
-            self.axial_layer.translate = self.translate_offset['axial'][1:]
+            self.axial_layer.translate = self.translate_offset['axial']
 
         # 设置水平布局
         self.canvas = self.viewer.window.qt_viewer.canvas
