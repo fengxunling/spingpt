@@ -104,61 +104,61 @@ class ViewerUI:
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
 
     def apply_layout_settings(self):
-        """应用基于界面尺寸的布局设置"""
-        # 修改布局方向判断逻辑
+        """Apply layout settings based on interface dimensions"""
+        # Modify layout direction determination logic
         z, y, x = self.image_array.shape[:3]
         print(f'x={x}, y={y}, z={z}')
-        aspect_ratio = (z + x) / y  # 根据Z+X轴总长度与Y轴的比例判断布局
+        aspect_ratio = (z + x) / y  # Determine layout based on ratio of Z+X axis total length to Y axis
         layout_setting = 'vertical' if aspect_ratio > 1.2 else 'horizontal'
-        print(f'自动布局方向: {layout_setting}')
+        print(f'Auto layout direction: {layout_setting}')
 
-        # 获取Qt视图实际渲染尺寸
+        # Get actual Qt view rendering size
         canvas = self.viewer.window.qt_viewer.canvas.size
-        window_width = canvas[1] - 200  # 留出侧边栏空间
-        window_height = canvas[0] - 100  # 留出工具栏空间
+        window_width = canvas[1] - 200  # Reserve space for sidebar
+        window_height = canvas[0] - 100  # Reserve space for toolbar
         print(f'window_width={window_width}, window_height={window_height}')
 
-        # 计算基础缩放比例（保持宽高比）
+        # Calculate base scaling ratio (maintain aspect ratio)
         if layout_setting == 'vertical':
-            # 垂直布局：上下排列，宽度相同
+            # Vertical layout: stacked vertically, same width
             viewport_height = window_height // 2
             viewport_width = window_width
             
-            # 矢状面缩放计算（显示X-Y平面）
+            # Sagittal plane scaling calculation (display X-Y plane)
             sagittal_scale_x = viewport_width / x
             sagittal_scale_y = viewport_height / z
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
             print(f'sagittal_scale={sagittal_scale}')
             
-            # 轴向面缩放计算（显示Z-Y平面）
+            # Axial plane scaling calculation (display Z-Y plane)
             axial_scale_x = viewport_width / y
             axial_scale_y = viewport_height / x
             axial_scale = min(axial_scale_x, axial_scale_y)
             print(f'axial_scale={axial_scale}')
             
-            # 统一使用最小缩放保证显示
+            # Use minimum scaling to ensure display
             final_scale = min(sagittal_scale, axial_scale)
             print(f'final_scale={final_scale}')
             self.sagittal_base_scale = (final_scale, final_scale, final_scale)
             self.axial_base_scale = (final_scale, final_scale, final_scale)
             
-            # 自动计算偏移量（垂直布局）
+            # Auto calculate offset (vertical layout)
             self.translate_offset = {
                 'sagittal': (x * final_scale / 2, -y * final_scale / 2 - 100),
                 'axial': (-y * final_scale / 2, -y * final_scale / 2 - 100)
             }
             
-        elif layout_setting == 'horizontal':  # 水平布局
-            # 水平布局：左右排列，高度相同
+        elif layout_setting == 'horizontal':  # Horizontal layout
+            # Horizontal layout: side by side, same height
             viewport_width = window_width // 2
             viewport_height = window_height
             
-            # 矢状面缩放计算
+            # Sagittal plane scaling calculation
             sagittal_scale_x = viewport_width / x
             sagittal_scale_y = viewport_height / z
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
             print(f'sagittal_scale={sagittal_scale}')
-            # 轴向面缩放计算
+            # Axial plane scaling calculation
             axial_scale_x = viewport_width / y
             axial_scale_y = viewport_height / x
             axial_scale = min(axial_scale_x, axial_scale_y)
@@ -169,16 +169,16 @@ class ViewerUI:
             self.sagittal_base_scale = (final_scale, final_scale, final_scale)
             self.axial_base_scale = (final_scale, final_scale, final_scale)
             
-            # 水平布局偏移计算
+            # Horizontal layout offset calculation
             self.translate_offset = {
                 'sagittal': (-x * sagittal_scale / 2, -50),
-                'axial': (-z * axial_scale / 2, -100)
+                'axial': (-x * axial_scale / 2, -100)
             }
 
         for view in ['sagittal', 'axial']:
             layer = getattr(self, f'{view}_layer', None)
             if layer:
-                # 使用二维缩放和平移（忽略Z轴）
+                # Use 2D scaling and translation (ignore Z axis)
                 layer.scale = self.sagittal_base_scale[1:] if view == 'sagittal' else self.axial_base_scale[1:]
                 layer.translate = self.translate_offset[view]
 

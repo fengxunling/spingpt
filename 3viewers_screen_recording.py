@@ -50,15 +50,15 @@ recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=
 # set the file path
 IMAGE_PATH = os.path.dirname(__file__)+'/data/'
 IMAGE_LIST = [
-    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz", # shape: (80, 640, 640)
+    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_space_sag_p2_iso_2050122160508_5001.nii.gz", # shape: (80, 640, 640)
     f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_T11_L2_20250122160508_6001.nii.gz", # shape: (1024, 368, 192)
-    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
-    # f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
-    # # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
-    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
+    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/Dicoms_Spine_MRI_t2_trufi3d_cor_06_2050122160508_4001.nii.gz", # shape: (896, 104, 896)
+    f"{IMAGE_PATH}/T2G003_Spine_NIFTI/T2G003_Spine_MRI_t2_space_sag_p2_iso_20250122160508_5001.nii.gz", # shape: (80, 640, 640)
+    # f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_gre_sag_sergio_mat384_TR428_06x06_5min47_20240820161941_4001.nii.gz", # shape: (288, 768, 28), Orientation: PSR
+    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz", # shape: (64, 640, 640)
+    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_spc_tra_iso_ZOOMit_05_TR2500_interpol_20240820161941_13001.nii.gz", # shape:(1024, 367, 192)
+    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001_seg.nii.gz", # shape: (896, 104, 896)
+    f"{IMAGE_PATH}/T2G002_MRI_Spine_Nifti/T2G002_MRI_Spine_t2_trufi3d_cor_06_20240820161941_9001.nii.gz", # shape: (896, 104, 896)
 ]
 
 def plot():
@@ -96,7 +96,7 @@ def main():
     viewer = viewer3d.get_viewer()
 
     def calculate_base_scale(image_shape, screen_size):
-        """根据图像尺寸和屏幕空间计算基础缩放比例"""
+        """Calculate base scaling ratio based on image dimensions and screen space"""
         screen_width = screen_size[0] // 2  
         screen_height = screen_size[1] // 2  
         
@@ -113,7 +113,7 @@ def main():
             'axial': (-data_shape[1]//2, 0)                      
         }
 
-    # # 应用缩放参数到视图
+    # # Apply scaling parameters to view
     # viewer3d.apply_layout_settings()
 
     def update_slices(event):
@@ -122,6 +122,35 @@ def main():
         viewered._on_points_changed(event)
     viewer = viewer3d.get_viewer()
     points_layer = viewer3d.get_points_layer()
+
+    # Add image switching function
+    def load_image(idx):
+        nonlocal current_image_idx, viewer3d, viewer
+        current_image_idx = idx % len(IMAGE_LIST)  # Cycle through images
+        
+        filepath = IMAGE_LIST[current_image_idx]
+        reader = napari_get_reader(filepath)
+        layer_data = reader(filepath)
+        image_array = layer_data[0][0]
+        metadata = layer_data[0][1]
+        
+        # Close old viewer
+        viewer.close()
+        # Create new viewer
+        viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH)
+        viewer = viewer3d.get_viewer()
+        # Rebind events
+        viewer.dims.events.current_step.connect(viewer3d._update_slices)
+        points_layer.events.data.connect(viewer3d._on_points_changed)
+
+    # Find buttons and connect signals in main function
+    def connect_nav_buttons():
+        # Add the following code after viewer initialization
+        viewer3d.prev_btn.clicked.connect(lambda: load_image(current_image_idx - 1))
+        viewer3d.next_btn.clicked.connect(lambda: load_image(current_image_idx + 1))
+
+    # Call connection function after viewer initialization
+    QTimer.singleShot(100, connect_nav_buttons)  # Delay to ensure buttons are initialized
 
 
     # viewer.window._qt_window.showFullScreen() # full screen
