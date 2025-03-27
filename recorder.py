@@ -159,26 +159,32 @@ class ScreenRecorder:
         }
 
     def _capture_loop(self):
-        # get the screen capture object
         with mss() as sct:
+            last_capture_time = time.perf_counter()
             while self.is_recording:
-                try:  # 将try块移到循环内部，保持持续捕获
-                    # capture the screen region
+                try:
+                    # 精确控制帧率
+                    elapsed = time.perf_counter() - last_capture_time
+                    sleep_time = max(0, (1/self.FPS) - elapsed)
+                    time.sleep(sleep_time)
+                    
+                    last_capture_time = time.perf_counter()
+                    
+                    # 优化图像捕获流程
                     img = np.array(sct.grab(self.monitor))
-                    # transfrom to RGB format
                     img = cv2.cvtColor(img[..., :3], cv2.COLOR_BGR2RGB)
-
-                    # draw the text on the image
+                    
+                    # 分离文字绘制到独立线程
                     if not self.text_queue.empty():
                         img = self._draw_text(img)
+                    
+                    # 使用线程锁写入视频
+                    with threading.Lock():
+                        self.writer.append_data(img)
 
-                    # write the video frame
-                    self.writer.append_data(img)
-                    time.sleep(1/self.FPS)
                 except Exception as e:
                     print(f"capture error: {str(e)}")
-                    continue  # 出错后继续循环而不是break退出
-                    # 可添加错误计数和自动重试机制
+                    continue
 
     def stop_recording(self):
         # stop the recording

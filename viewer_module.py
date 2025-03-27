@@ -498,35 +498,41 @@ class ViewerUI:
         if not command:
             return
         
-        try:
-            # Get new dictionary format result
-            result = generate_napari_code(command)
-            
-            if result['type'] == 'slice_adjustment':
-                # Handle slice adjustment
-                number = result['number']
-                axis = result['axis']
-                self.ai_response.setText(f"Slice position: {number}, Axis: {axis.upper()}")
+        # 异步处理AI命令
+        def async_ai_process():
+            try:
+                result = generate_napari_code(command)
                 
-                # Set slider based on axis
-                if axis == 'x':
-                    self.x_slider.setValue(number)
-                elif axis == 'y':
-                    self.y_slider.setValue(number)
-                elif axis == 'z':
-                    self.z_slider.setValue(number)
+                self.side_panel.update()
+                
+                if result['type'] == 'slice_adjustment':
+                    # Handle slice adjustment
+                    number = result['number']
+                    axis = result['axis']
+                    self.ai_response.setText(f"Slice position: {number}, Axis: {axis.upper()}")
                     
-            elif result['type'] == 'general_response':
-                # Display complete model response
-                self.ai_response.setText(f"Model response:\n{result['content']}")
+                    # Set slider based on axis
+                    if axis == 'x':
+                        self.x_slider.setValue(number)
+                    elif axis == 'y':
+                        self.y_slider.setValue(number)
+                    elif axis == 'z':
+                        self.z_slider.setValue(number)
+                    
+                elif result['type'] == 'general_response':
+                    # Display complete model response
+                    self.ai_response.setText(f"Model response:\n{result['content']}")
+                    
+                elif result['type'] == 'error':
+                    self.ai_response.setText(f"Error: {result['message']}")
                 
-            elif result['type'] == 'error':
-                self.ai_response.setText(f"Error: {result['message']}")
-                
-        except KeyError as e:
-            self.ai_response.setText(f"Response format error: Missing key field {str(e)}")
-        except Exception as e:
-            self.ai_response.setText(f"Command processing failed: {str(e)}")
+            except KeyError as e:
+                self.ai_response.setText(f"Response format error: Missing key field {str(e)}")
+            except Exception as e:
+                self.ai_response.setText(f"Command processing failed: {str(e)}")
+        
+        # 启动独立线程
+        threading.Thread(target=async_ai_process).start()
         
 
     def get_viewer(self):
