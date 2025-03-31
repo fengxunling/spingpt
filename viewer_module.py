@@ -114,8 +114,8 @@ class ViewerUI:
 
         # Get actual Qt view rendering size
         canvas = self.viewer.window.qt_viewer.canvas.size
-        window_width = canvas[1] - 200  # Reserve space for sidebar
-        window_height = canvas[0] - 100  # Reserve space for toolbar
+        window_width = canvas[1] - 100  # Reserve space for sidebar
+        window_height = canvas[0] - 50  # Reserve space for toolbar
         print(f'window_width={window_width}, window_height={window_height}')
 
         # Calculate base scaling ratio (maintain aspect ratio)
@@ -331,15 +331,19 @@ class ViewerUI:
     def _setup_ortho_views(self):
         """Initialize orthogonal views"""
         # Get initial slice positions
+        z = self.image_array.shape[0] // 2
+        y = self.image_array.shape[1] // 2 
+        x = self.image_array.shape[2] // 2
+        self.viewer.dims.current_step = (z, y, x)
         initial_z, initial_y, initial_x = self.viewer.dims.current_step
 
         # Add orthogonal 2D slice layers
-        # axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
-        # coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
-        # sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
-        axial_slice = self.image_array[initial_z, :, :]
-        coronal_slice = self.image_array[:, initial_y, :]
-        sagittal_slice = self.image_array[:, :, initial_x]
+        axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
+        coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
+        sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
+        # axial_slice = self.image_array[initial_z, :, :]
+        # coronal_slice = self.image_array[:, initial_y, :]
+        # sagittal_slice = self.image_array[:, :, initial_x]
 
         # 动态设置图层参数
         if 'sagittal' in self.visible_views:
