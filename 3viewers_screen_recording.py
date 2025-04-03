@@ -57,6 +57,8 @@ def plot():
         print(f"Orientation: {nib.orientations.aff2axcodes(img.affine)}\n")
 
 def main():
+    previous_length = 0
+
     if len(sys.argv) < 2:
         print("Please select a NIfTI file through file navigator")  # More specific prompt
         sys.exit(1)
@@ -88,7 +90,7 @@ def main():
     image_array = layer_data[0][0]
     metadata = layer_data[0][1]
 
-    viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH)
+    viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH, recorder)
     viewer = viewer3d.get_viewer()
 
     # # 在初始化时添加(0, 0)点进行测试
@@ -166,8 +168,39 @@ def main():
         face_color='red'
     )
 
-    # logics for recording the points
-    previous_length = 0
+    def on_points_changed(event):
+        nonlocal previous_length
+
+        """Points layer change handler"""
+        current_data = points_layer.data
+        current_length = len(current_data)
+        
+        if current_length > previous_length:
+            new_points = current_data[previous_length:current_length]
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+            
+            current_step = viewer.dims.current_step
+            print(f'current_step={current_step}')
+            image_layer = viewer.layers['Sagittal']
+            image_bias = np.array([0, 0]) * image_layer.scale + image_layer.translate
+            
+            log_info = []
+            for pt in new_points:
+                pt_modified = np.array(pt)
+                pt_modified[1] = current_step[1]
+                physical_coord = pt_modified - np.array([image_bias[1], 0, image_bias[0]])
+                log_entry = (
+                    f"[Point Annotation] {timestamp}\n"
+                    f"Spatial coordinates: {np.round(physical_coord, 0)}\n"
+                    f"Current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
+                    "------------------------\n"
+                )
+                log_info.append(log_entry)
+            
+            if recorder.is_recording: 
+                recorder.add_annotation(log_info)
+            
+            previous_length = current_length
 
     points_layer.events.data.connect(on_points_changed)
 

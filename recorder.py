@@ -60,15 +60,6 @@ class ScreenRecorder:
         except Exception as e:
             print(f"Annotation error: {str(e)}")
         
-        # write the annotation to the log
-        if self.is_recording:
-            log_entry = (
-                f"[Annotation] {timestamp.strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]}\n"
-                f"Content: {text}\n"
-                "------------------------\n"
-            )
-            with open(self.log_path, "a") as f:
-                f.write(log_entry)
     
     def _draw_text(self, img_np):
         """Draw text on the image"""
@@ -154,8 +145,10 @@ class ScreenRecorder:
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width()+1300,
-            "height": geo.height()+900
+            "width": geo.width(),
+            "height": geo.height()
+            # "width": geo.width()+1300,
+            # "height": geo.height()+900
         }
 
     def _capture_loop(self):
@@ -163,7 +156,6 @@ class ScreenRecorder:
             last_capture_time = time.perf_counter()
             while self.is_recording:
                 try:
-                    # 精确控制帧率
                     elapsed = time.perf_counter() - last_capture_time
                     sleep_time = max(0, (1/self.FPS) - elapsed)
                     time.sleep(sleep_time)

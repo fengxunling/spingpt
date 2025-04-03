@@ -18,11 +18,12 @@ from utils.llm import generate_napari_code
 import re
 
 class ViewerUI:
-    def __init__(self, image_array, metadata, filepath, RECORD_PATH, visible_views=['sagittal', 'axial']):
+    def __init__(self, image_array, metadata, filepath, recorder, RECORD_PATH, visible_views=['sagittal', 'axial']):
         self.viewer = Viewer()
         self.image_array = image_array
         self.metadata = metadata
         self.RECORD_PATH = RECORD_PATH
+        self.recorder = recorder
         self.visible_views = visible_views
         self.translate_offset = None
         self.sagittal_base_scale = None
@@ -372,7 +373,6 @@ class ViewerUI:
     def _connect_events(self):
         """Connect event handlers"""
         self.viewer.dims.events.current_step.connect(self._update_slices)
-        self.points_layer.events.data.connect(self._on_points_changed)
 
     def _update_slices(self, event):
         """Slice update logic"""
@@ -424,39 +424,6 @@ class ViewerUI:
         self.section_lines_axial.data = line_data_axial
         self.section_lines_sagittal.data = line_data_sagittal
         self.coord_label.setText(f"Section Position: Z:{current_z} Y:{current_y} X:{current_x}")
-
-    def _on_points_changed(self, event):
-        """Points layer change handler"""
-        global previous_length
-        current_data = self.points_layer.data
-        current_length = len(current_data)
-        
-        if current_length > previous_length:
-            new_points = current_data[previous_length:current_length]
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            
-            current_step = viewer.dims.current_step
-            spacing = image_layer.scale
-            translate = image_layer.translate
-            
-            log_info = []
-            for pt in new_points:
-                physical_coord = np.array(pt) * spacing + translate
-                log_entry = (
-                    f"time: {timestamp}\n"
-                    f"spatial coordinates: {physical_coord}\n"
-                    # f"volumes coordinates: {pt}\n"
-                    f"current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
-                    "------------------------\n"
-                )
-                log_info.append(log_entry)
-                print(log_entry.strip())
-            
-            if recorder.is_recording:
-                with open(recorder.log_path, "a") as f:
-                    f.writelines(log_info)
-            
-            previous_length = current_length
     
     def toggle_audio_recording(self):
         """Toggle audio recording status"""
