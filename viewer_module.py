@@ -287,20 +287,12 @@ class ViewerUI:
         self.status_label = QLabel("Recording status: Not recording")
         self.image_name_label = QLabel(f"Current Image: {os.path.basename(filepath)}")
         
-        # Navigation buttons (prev_btn/next_btn logic from original tmp.py)
-        self.prev_btn = QPushButton("Previous")
-        self.prev_btn.setObjectName("prev_btn")  
-        self.next_btn = QPushButton("Next")
-        self.next_btn.setObjectName("next_btn")  
-        
         # Get main layout reference
         main_layout = self.slider_container.layout()
         # Insert status label and image name above sliders
         main_layout.insertWidget(0, self.status_label)  # Insert at top of layout
         main_layout.insertWidget(1, self.image_name_label)
-        
-        # Add navigation buttons and input field below sliders
-        main_layout.addLayout(self._create_nav_buttons_layout())
+
         
         # Add dock widget (original axis_controls_dock logic)
         self.viewer.window.add_dock_widget(
@@ -310,12 +302,6 @@ class ViewerUI:
             allowed_areas=['left', 'right']
         )
 
-    def _create_nav_buttons_layout(self):
-        """Create navigation buttons layout"""
-        layout = QHBoxLayout()
-        layout.addWidget(self.prev_btn)
-        layout.addWidget(self.next_btn)
-        return layout
 
     def _setup_layers(self):
         """Initialize image and points layers"""

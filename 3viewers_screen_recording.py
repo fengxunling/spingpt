@@ -28,8 +28,6 @@ from qtpy.QtWidgets import QListWidgetItem
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
 
-import cv2
-
 # set the parameters
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
@@ -127,7 +125,7 @@ def main():
         viewer.window._qt_window.menuBar().setVisible(False),
         viewer.window._qt_window.statusBar().setVisible(False),
         [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
-         if btn.objectName() not in ["prev_btn", "next_btn", "audio_record_btn", "ai_submit_btn"]],  # add audio_record_btn
+         if btn.objectName() not in ["audio_record_btn", "ai_submit_btn"]],  # add audio_record_btn
     ])
 
 
