@@ -1,8 +1,7 @@
 import os
 import sys
-sys.path.append(os.path.dirname(__file__)+'/napari-nifti/src/')
+sys.path.append(os.path.dirname(__file__)+'/napari-nifti-main/src/')
 print(os.path.dirname(__file__)+'')
-
 import threading
 import time
 from datetime import datetime
