@@ -108,8 +108,8 @@ class ViewerUI:
         # Modify layout direction determination logic
         z, y, x = self.image_array.shape[:3]
         print(f'x={x}, y={y}, z={z}')
-        aspect_ratio = (z + x) / y  # Determine layout based on ratio of Z+X axis total length to Y axis
-        layout_setting = 'vertical' if aspect_ratio > 1.2 else 'horizontal'
+        aspect_ratio = (z + y) / max(y, x)  # Determine layout based on ratio of Z+X axis total length to Y axis
+        layout_setting = 'vertical' if aspect_ratio < 0.8 else 'horizontal'
         print(f'Auto layout direction: {layout_setting}')
 
         # Get actual Qt view rendering size
@@ -325,21 +325,19 @@ class ViewerUI:
 
         # Add orthogonal 2D slice layers
         axial_slice = np.fliplr(np.rot90(self.image_array[initial_z, :, :], k=2))
-        coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
+        # coronal_slice = np.fliplr(np.rot90(self.image_array[:, initial_y, :], k=2))
         sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, initial_x], k=2))
-        # axial_slice = self.image_array[initial_z, :, :]
-        # coronal_slice = self.image_array[:, initial_y, :]
-        # sagittal_slice = self.image_array[:, :, initial_x]
+        print(f'axial_slice.shape={axial_slice.shape}, sagittal_slice.shape={sagittal_slice.shape}')
 
-        # 动态设置图层参数
+        # set the layer parameters dynamically
         if 'sagittal' in self.visible_views:
             self.sagittal_layer = self.viewer.add_image(sagittal_slice, name='Sagittal')
-            self.sagittal_layer.scale = self.sagittal_base_scale[1:]  # 使用动态缩放
+            self.sagittal_layer.scale = self.sagittal_base_scale[1:] 
             self.sagittal_layer.translate = self.translate_offset['sagittal']
         
         if 'axial' in self.visible_views:
             self.axial_layer = self.viewer.add_image(axial_slice, name='Axial')
-            self.axial_layer.scale = self.axial_base_scale[1:]     # 使用动态缩放
+            self.axial_layer.scale = self.axial_base_scale[1:]    
             self.axial_layer.translate = self.translate_offset['axial']
 
         print(f'self.axial_layer.scale={self.axial_layer.scale}, self.axial_layer.translate={self.axial_layer.translate}')
@@ -386,12 +384,10 @@ class ViewerUI:
         if 'sagittal' in self.visible_views:
             sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
             self.sagittal_layer.data = sagittal_slice
-            # print(f'sagittal_slice.shape={sagittal_slice.shape}')
         
         if 'axial' in self.visible_views:
             axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
             self.axial_layer.data = axial_slice
-            # print(f'axial_slice.shape={axial_slice.shape}')
         
         # refresh the display
         self.axial_layer.refresh()  

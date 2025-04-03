@@ -115,7 +115,7 @@ def main():
     def update_slices(event):
         viewer3d._update_slices(event)
     def on_points_changed(event):
-        viewered._on_points_changed(event)
+        viewer3d._on_points_changed(event)
     viewer = viewer3d.get_viewer()
     points_layer = viewer3d.get_points_layer()
 
