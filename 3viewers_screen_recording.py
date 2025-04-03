@@ -93,17 +93,17 @@ def main():
     viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH, recorder)
     viewer = viewer3d.get_viewer()
 
-    # # 在初始化时添加(0, 0)点进行测试
-    # image_layer = viewer.layers['Sagittal']
-    # origin_point = np.array([[0, 0]])  # 创建(0, 0)点
-    # origin_physical = origin_point * image_layer.scale + image_layer.translate  # 转换为物理坐标
-    # viewer.add_points(
-    #     origin_physical,
-    #     name='Origin Point',
-    #     size=10,
-    #     face_color='red',
-    #     edge_color='black'
-    # )
+    # 在初始化时添加(0, 0)点进行测试
+    image_layer = viewer.layers['Sagittal']
+    origin_point = np.array([[0, 0]]) 
+    origin_physical = origin_point * image_layer.scale + image_layer.translate
+    viewer.add_points(
+        origin_physical,
+        name='Origin Point',
+        size=2,
+        face_color='blue',
+        edge_color='black'
+    )
 
     def calculate_base_scale(image_shape, screen_size):
         """Calculate base scaling ratio based on image dimensions and screen space"""
@@ -213,7 +213,6 @@ def main():
 
         try:
             latest_rect = event.source.data[-1]
-            rect_info = f"Rectangle coordinates: {np.round(latest_rect, 2).tolist()}"
             
             # Get physical coordinates
             image_layer = viewer.layers['Sagittal']
@@ -225,7 +224,7 @@ def main():
             # Write information to log file
             timestamp = datetime.now().strftime('%H:%M:%S')
             try:
-                log_text = f"[Rectangle Annotation] {timestamp}\n{rect_info}\n{coord_str}\n------------------------\n"
+                log_text = f"[Rectangle Annotation] {timestamp}\n{coord_str}\nNote: {viewer3d.annotation_edit.text()}------------------------\n"
                 recorder.add_annotation(log_text)  # Call recorder's recording method
             except Exception as e:
                 print(f"Error writing annotation: {str(e)}")
@@ -345,8 +344,7 @@ def main():
 
         for idx, ann in enumerate(annotations, 1):
             item_text = f"Rectangle {idx} [Sagittal]\nAnnotation: {ann.get('text','')}\n" + \
-                f"[{ann['layer']}]\nVertices: {len(ann['coordinates'])}\n" + \
-                f"Note: {viewer3d.annotation_edit.text()}"
+                f"[{ann['layer']}]\nVertices: {len(ann['coordinates'])}\n" 
                 
             item = QListWidgetItem(item_text)
             item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
