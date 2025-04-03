@@ -91,6 +91,18 @@ def main():
     viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH)
     viewer = viewer3d.get_viewer()
 
+    # # 在初始化时添加(0, 0)点进行测试
+    # image_layer = viewer.layers['Sagittal']
+    # origin_point = np.array([[0, 0]])  # 创建(0, 0)点
+    # origin_physical = origin_point * image_layer.scale + image_layer.translate  # 转换为物理坐标
+    # viewer.add_points(
+    #     origin_physical,
+    #     name='Origin Point',
+    #     size=10,
+    #     face_color='red',
+    #     edge_color='black'
+    # )
+
     def calculate_base_scale(image_shape, screen_size):
         """Calculate base scaling ratio based on image dimensions and screen space"""
         screen_width = screen_size[0] // 2  
@@ -172,7 +184,9 @@ def main():
             
             # Get physical coordinates
             image_layer = viewer.layers['Sagittal']
-            physical_coord = latest_rect * image_layer.scale + image_layer.translate
+            origin_point = np.array([[0, 0]])  
+            origin_physical = origin_point * image_layer.scale + image_layer.translate
+            physical_coord = latest_rect - origin_physical
             coord_str = f"Physical coordinates: {np.round(physical_coord, 2).tolist()}"
             
             # Write information to log file
