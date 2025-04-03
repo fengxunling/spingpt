@@ -342,9 +342,34 @@ class ViewerUI:
             self.axial_layer.scale = self.axial_base_scale[1:]     # 使用动态缩放
             self.axial_layer.translate = self.translate_offset['axial']
 
-        # 设置水平布局
+        print(f'self.axial_layer.scale={self.axial_layer.scale}, self.axial_layer.translate={self.axial_layer.translate}')
+        print(f'self.sagittal_layer.scale={self.sagittal_layer.scale}, self.sagittal_layer.translate={self.sagittal_layer.translate}')
+        
+        # set layout
         self.canvas = self.viewer.window.qt_viewer.canvas
         self.canvas.layout = QHBoxLayout()
+
+        self.coord_label = QLabel("Section Position: (0, 0)")
+        self.slider_container.layout().insertWidget(2, self.coord_label)  
+
+        self.section_lines_sagittal = self.viewer.add_shapes(
+            name='Section Lines Sagittal',
+            shape_type='line',
+            edge_color='yellow',
+            edge_width=2,
+            scale=self.sagittal_layer.scale,
+            translate=self.sagittal_layer.translate,
+            visible=True
+        )
+        self.section_lines_axial = self.viewer.add_shapes(
+            name='Section Lines Axial',
+            shape_type='line',
+            edge_color='yellow',
+            edge_width=2,
+            scale=self.axial_layer.scale,
+            translate=self.axial_layer.translate,
+            visible=True
+        )
 
     def _connect_events(self):
         """Connect event handlers"""
@@ -357,23 +382,16 @@ class ViewerUI:
         z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) # add bounder check
         y = np.clip(self.viewer.dims.current_step[1], 0, self.image_array.shape[1]-1)
         x = np.clip(self.viewer.dims.current_step[2], 0, self.image_array.shape[2]-1)
-        
-        # # axial view (rotate 90 degrees counterclockwise)
-        # axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
-        # # coronal view (rotate 180 degrees counterclockwise)
-        # coronal_slice = np.fliplr(np.rot90(self.image_array[:, y, :], k=2))
-        # # sagittal view
-        # sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
 
         if 'sagittal' in self.visible_views:
             sagittal_slice = np.fliplr(np.rot90(self.image_array[:, :, x], k=2))
             self.sagittal_layer.data = sagittal_slice
-            print(f'sagittal_slice.shape={sagittal_slice.shape}')
+            # print(f'sagittal_slice.shape={sagittal_slice.shape}')
         
         if 'axial' in self.visible_views:
             axial_slice = np.fliplr(np.rot90(self.image_array[z, :, :], k=2))
             self.axial_layer.data = axial_slice
-            print(f'axial_slice.shape={axial_slice.shape}')
+            # print(f'axial_slice.shape={axial_slice.shape}')
         
         # refresh the display
         self.axial_layer.refresh()  
@@ -395,6 +413,21 @@ class ViewerUI:
                     visible.append(False)
             self.points_layer.visible = visible
             self.points_layer.refresh()  # refresh the point layer display
+        
+        current_z, current_y, current_x = self.viewer.dims.current_step
+        
+        line_data_axial = [
+            # Axial view horizontal line
+            [(0, current_x), (self.image_array.shape[1], current_x)],
+        ]
+        line_data_sagittal = [
+            # Sagittal view vertical line
+            [(current_z, 0), (current_z, self.image_array.shape[1])],
+        ]
+        
+        self.section_lines_axial.data = line_data_axial
+        self.section_lines_sagittal.data = line_data_sagittal
+        self.coord_label.setText(f"Section Position: Z:{current_z} Y:{current_y} X:{current_x}")
 
     def _on_points_changed(self, event):
         """Points layer change handler"""
