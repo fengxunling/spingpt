@@ -216,7 +216,7 @@ def main():
 
 
     # ================= bind with key ======================
-    @viewer.bind_key('M')  # press to start/stop recording
+    @viewer.bind_key('R')  # press to start/stop recording
     def toggle_recording(viewer):
         global status_label
         if not recorder.is_recording:
@@ -229,6 +229,13 @@ def main():
             viewer3d.get_status_label().setText("Recording status: Not recording")
             viewer3d.get_status_label().setStyleSheet("color: green;")
             print("Stop recording...")
+    
+    @viewer.bind_key('Escape')
+    def close_window(viewer):
+        """close current window"""
+        if recorder.is_recording:
+            recorder.stop_recording()
+        viewer.window.close()
 
 
     @viewer.bind_key('B')
