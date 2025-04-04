@@ -74,7 +74,7 @@ class ScreenRecorder:
         while not self.text_queue.empty():
             annotation = self.text_queue.get()
             if current_time < annotation["expire_time"]:
-                draw.text(TEXT_POSITION, 
+                draw.text((0, 0), 
                          f"{annotation['text']} ({annotation['timestamp'].strftime('%H:%M:%S')})",
                          fill=TEXT_COLOR, 
                          font=self.font)

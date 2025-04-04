@@ -90,7 +90,8 @@ def main():
     image_array = layer_data[0][0]
     metadata = layer_data[0][1]
 
-    viewer3d = ViewerUI(image_array, metadata, filepath, RECORD_PATH, recorder)
+    viewer3d = ViewerUI(image_array=image_array, metadata=metadata, filepath=filepath, \
+                    recorder=recorder, RECORD_PATH=RECORD_PATH)
     viewer = viewer3d.get_viewer()
 
     # 在初始化时添加(0, 0)点进行测试
@@ -260,7 +261,7 @@ def main():
 
 
     # ================= bind with key ======================
-    @viewer.bind_key('R')  # press to start/stop recording
+    @viewer.bind_key('M')  # press to start/stop recording
     def toggle_recording(viewer):
         global status_label
         if not recorder.is_recording:
@@ -274,7 +275,7 @@ def main():
             viewer3d.get_status_label().setStyleSheet("color: green;")
             print("Stop recording...")
     
-    @viewer.bind_key('Escape')
+    @viewer.bind_key('Escape') # need to exit the B editing mode
     def close_window(viewer):
         """close current window"""
         if recorder.is_recording:
