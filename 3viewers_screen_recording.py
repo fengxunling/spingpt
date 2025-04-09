@@ -273,6 +273,22 @@ def main():
     def toggle_rectangle_mode(viewer):
         global shapes_layer, image_layer
         
+        # Check if already in rectangle annotation mode
+        if 'add rectangle' in viewer.layers and viewer.layers['add rectangle'].visible:
+            # Exit rectangle annotation mode
+            shapes_layer = viewer.layers['add rectangle']
+            shapes_layer.visible = False
+            
+            # Restore mouse interaction for all layers
+            for layer in viewer.layers:
+                layer.mouse_pan = True
+                layer.mouse_zoom = True
+            
+            viewer3d.get_status_label().setText("Mode: Normal")
+            viewer3d.get_status_label().setStyleSheet("color: green;")
+            return
+        
+        # Enter rectangle annotation mode
         # Get current axial view layer
         image_layer = viewer.layers['Sagittal']
         
@@ -301,8 +317,12 @@ def main():
             shapes_layer._event_connected = False  # Add initialization flag
         else:
             shapes_layer = viewer.layers['add rectangle']
+            shapes_layer.visible = True
             # Precisely disconnect the specified event handler
-            shapes_layer.events.data.disconnect(on_shape_added)  # Modified for precise disconnection
+            try:
+                shapes_layer.events.data.disconnect(on_shape_added)
+            except:
+                pass
 
         # Ensure single event binding
         if not getattr(shapes_layer, '_event_connected', False):
@@ -316,8 +336,8 @@ def main():
                 layer.mouse_zoom = False
             viewer.layers.move(viewer.layers.index(shapes_layer), -1)
         
-        # viewer3d.get_status_label().setText("Mode: Rectangle Annotation")
-        # viewer3d.get_status_label().setStyleSheet("color: blue;")
+        viewer3d.get_status_label().setText("Mode: Rectangle Annotation")
+        viewer3d.get_status_label().setStyleSheet("color: blue;")
 
     @viewer.bind_key('C')  
     def refresh_polygons(viewer):
