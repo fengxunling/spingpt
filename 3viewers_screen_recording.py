@@ -144,20 +144,6 @@ def main():
     ])
 
 
-    # Create line layer
-    def create_line_layer(color, line_data, layer, name, visible):
-        return viewer.add_shapes(
-            line_data,
-            shape_type='line',
-            edge_color=color,
-            edge_width=1.5,
-            scale=layer.scale,  # maintain the same scale as the corresponding view
-            translate=layer.translate,  # align with the axial view
-            name=name,
-            visible=visible
-        )
-
-
     # Connect dimension updates
     viewer.dims.events.current_step.connect(update_slices)
 

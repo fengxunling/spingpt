@@ -145,10 +145,10 @@ class ScreenRecorder:
         self.monitor = {
             "left": geo.x(),
             "top": geo.y(),
-            "width": geo.width(),
-            "height": geo.height()
-            # "width": geo.width()+1300,
-            # "height": geo.height()+900
+            # "width": geo.width(),
+            # "height": geo.height()
+            "width": geo.width()+1300,
+            "height": geo.height()+900
         }
 
     def _capture_loop(self):
