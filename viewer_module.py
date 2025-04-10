@@ -47,6 +47,12 @@ class ViewerUI:
         """Initialize right-side annotation panel"""
         self.side_panel = QWidget()
         layout = QVBoxLayout()
+
+        # add layer information
+        self.corner_label = QLabel("From the layer XXX")
+        self.corner_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px; border-radius: 3px;")
+        self.corner_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.corner_label)
         
         # rectangle list
         self.rect_list = QListWidget()
@@ -126,8 +132,8 @@ class ViewerUI:
             viewport_width = window_width
             
             # Sagittal plane scaling calculation (display X-Y plane)
-            sagittal_scale_x = viewport_width / x
-            sagittal_scale_y = viewport_height / z
+            sagittal_scale_x = viewport_width / z
+            sagittal_scale_y = viewport_height / y
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
             print(f'sagittal_scale={sagittal_scale}')
             
