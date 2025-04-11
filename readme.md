@@ -10,7 +10,12 @@ This is the main view of the interface. It loads the image and displays the axia
 Parameters like opacity and contrast can be changed. Additionally, the image can be zoomed in or out using the mouse scroll wheel.
 [basic_function.mp4](https://github.com/user-attachments/assets/bc0b26df-d9d9-4a8d-955e-bdac06bd2aaa)
 
-### New feature1: Rectangle (Polygon) annotation on sagittal viewer
+### Quick change between different image files
+Now, a batch of files can be preloaded, allowing the user to select freely the file to display.
+[select files.mp4](https://github.com/user-attachments/assets/17906a83-e6a5-45a8-aac8-6140d42a9ad1)
+
+
+### Rectangle (Polygon) annotation mode on sagittal viewer
 1. The user can resize the annotation and adjust its vertices:
 [add rectangle annotation.mp4](https://github.com/user-attachments/assets/be7fa3f6-d483-40df-b2b2-1d84eacc1084)
 
@@ -19,20 +24,15 @@ Parameters like opacity and contrast can be changed. Additionally, the image can
 3. If the user change the slice index, double-clicking the rectangle annotation will activate it and return to the specific layer corresponding to the annotation.
 [activate annotation.mp4](https://github.com/user-attachments/assets/f418c60e-48f1-49cf-bd2a-e3c29aae5ba6)
 
-### New feature2: Quick change between different image files
-Previously, the interface could only load one image at a time, and to switch to a different image file, I had to manually change the path in the code.
-
-Now, a batch of files can be preloaded, allowing the user to switch between them using the 'Next' and 'Previous' buttons. The current filename is displayed on the interface.
-
-I’ve noticed that many files have completely different image shapes, which makes it a bit tricky to ensure each image auto-scales and fits optimally in the viewer. However, I will look into improving this.
-### New features3: AI response
+### On testing mode: AI response
 I used Ollama to deploy a test version of the `deepseek-r1:7b` model locally on my computer.
 
 Now, the user can interact with it through the text.
 
 1. **For pre-coded instructions**: Currently, it supports commands like changing the slice index. (So far, this is the only type I’ve implemented, but in the future, maybe we could add other pre-coded commands, such as removing artifacts or enhancing images?)
-![[ai command-1.mp4]]
+[ai command-1.mp4](https://github.com/user-attachments/assets/c35e6203-3c80-4322-b516-aa41eb660b91)
 2. **For general chat:** 
+[ai command-1.mp4](https://github.com/user-attachments/assets/4e65143c-7e46-43ad-b172-29db5f7632f1)
 
 ## Quick Start
 1. Set up the environment.
