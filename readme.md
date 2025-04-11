@@ -48,9 +48,6 @@ conda activate <name of your environment>
 ```bash
 python navigate_gui.py
 ```
-## Operation Demo
-</video>
-https://github.com/user-attachments/assets/258d57bf-af5a-4323-929d-e351842611ad
 
 ## Project Structure
 ```
