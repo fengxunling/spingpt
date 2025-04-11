@@ -12,7 +12,8 @@ class NIFTINavigator:
         
         # Initialize UI components
         self.create_widgets()
-        self.scan_directory(os.path.join(os.path.dirname(__file__), 'data'))
+        # self.scan_directory(os.path.join(os.path.dirname(__file__), 'data'))
+        self.scan_directory('E:\mri_data_neurorestore')
     
     def create_widgets(self):
         # File list frame
