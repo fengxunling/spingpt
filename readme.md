@@ -8,19 +8,17 @@ A Python-based multi-view screen recording system that supports simultaneous mon
 This is the main view of the interface. It loads the image and displays the axial and sagittal viewers. You can drag or scroll up/down to control the X, Y, and Z index slices.
 
 Parameters like opacity and contrast can be changed. Additionally, the image can be zoomed in or out using the mouse scroll wheel.
-https://user-images.githubusercontent.com/fengxunling/basic_functions.mp4
-![Main Viewer](assets/main_viewer.png)
-After pressing the 'M' key, the recording tool starts working. The full screen will be recorded, along with the audio. Additionally, all operations will be logged in a file named **log.txt**, formatted as follows:
-![[Pasted image 20250327161234.png]]
-The audio can also be transcribed into English and saved in the same folder (referred to as 'temp' here).
-![[Pasted image 20250327161457.png]]
+[basic_function.mp4](https://github.com/user-attachments/assets/bc0b26df-d9d9-4a8d-955e-bdac06bd2aaa)
+
 ### New feature1: Rectangle (Polygon) annotation on sagittal viewer
 1. The user can resize the annotation and adjust its vertices:
-![[add rectangle annotation.mp4]]
+[add rectangle annotation.mp4](https://github.com/user-attachments/assets/be7fa3f6-d483-40df-b2b2-1d84eacc1084)
+
 2. The user can add annotations to this rectangle or polygon either by writing or speaking. Notably, if you press the button to start speaking, the audio will be recorded, transcribed into English text, and updated in the annotation:
-![[edit annotation.mp4]]
+[edit annotation.mp4](https://github.com/user-attachments/assets/f9dc0992-dbd1-437c-8916-c60647402d4b)
 3. If the user change the slice index, double-clicking the rectangle annotation will activate it and return to the specific layer corresponding to the annotation.
-![[activate annotation.mp4]]
+[activate annotation.mp4](https://github.com/user-attachments/assets/f418c60e-48f1-49cf-bd2a-e3c29aae5ba6)
+
 ### New feature2: Quick change between different image files
 Previously, the interface could only load one image at a time, and to switch to a different image file, I had to manually change the path in the code.
 
