@@ -41,12 +41,12 @@ conda env create -f environment.yml
 ```
 2. Run the environment.
 ```bash
-conda activate spinGPT
+conda activate <name of your environment>
 ```
 
 3. cd to the project and run the python file.
 ```bash
-python 3viewers_screen_recording_new.py
+python navigate_gui.py
 ```
 ## Operation Demo
 </video>
