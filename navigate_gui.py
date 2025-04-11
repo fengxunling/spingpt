@@ -12,8 +12,7 @@ class NIFTINavigator:
         
         # Initialize UI components
         self.create_widgets()
-        # self.scan_directory(os.path.join(os.path.dirname(__file__), 'data'))
-        self.scan_directory('E:\mri_data_neurorestore')
+        self.scan_directory(os.path.join(os.path.dirname(__file__), 'data'))
     
     def create_widgets(self):
         # File list frame
@@ -101,7 +100,7 @@ class NIFTINavigator:
             
         file_path = item['values'][0]
         file_name = file_path.replace("\\", "/")
-        file_name = os.path.basename(file_name)
+        # file_name = os.path.basename(file_name)
         self.status.config(text=f"Opening: {os.path.basename(file_path)}...")
         print(f'==========={file_name}===========')
         try:
