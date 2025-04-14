@@ -376,6 +376,7 @@ class ViewerUI:
             visible=True
         )
 
+
     def _connect_events(self):
         """Connect event handlers"""
         self.viewer.dims.events.current_step.connect(self._update_slices)
