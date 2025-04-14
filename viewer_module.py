@@ -49,7 +49,7 @@ class ViewerUI:
         layout = QVBoxLayout()
 
         # add layer information
-        self.corner_label = QLabel("From the layer XXX")
+        self.corner_label = QLabel("Cervical")
         self.corner_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px; border-radius: 3px;")
         self.corner_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(self.corner_label)
@@ -132,14 +132,14 @@ class ViewerUI:
             viewport_width = window_width
             
             # Sagittal plane scaling calculation (display X-Y plane)
-            sagittal_scale_x = viewport_width / z
-            sagittal_scale_y = viewport_height / y
+            sagittal_scale_x = viewport_width / y
+            sagittal_scale_y = viewport_height / z
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
             print(f'sagittal_scale={sagittal_scale}')
             
             # Axial plane scaling calculation (display Z-Y plane)
-            axial_scale_x = viewport_width / y
-            axial_scale_y = viewport_height / x
+            axial_scale_x = viewport_width / x
+            axial_scale_y = viewport_height / y
             axial_scale = min(axial_scale_x, axial_scale_y)
             print(f'axial_scale={axial_scale}')
             
@@ -151,8 +151,8 @@ class ViewerUI:
             
             # Auto calculate offset (vertical layout)
             self.translate_offset = {
-                'sagittal': (x * final_scale / 2, -y * final_scale / 2 - 100),
-                'axial': (-y * final_scale / 2, -y * final_scale / 2 - 100)
+                'sagittal': (x * final_scale / 2, -y * final_scale / 2 - 200),
+                'axial': (-y * final_scale / 2, -y * final_scale / 2 - 200)
             }
             
         elif layout_setting == 'horizontal':  # Horizontal layout
@@ -161,13 +161,13 @@ class ViewerUI:
             viewport_height = window_height
             
             # Sagittal plane scaling calculation
-            sagittal_scale_x = viewport_width / x
+            sagittal_scale_x = viewport_width / y
             sagittal_scale_y = viewport_height / z
             sagittal_scale = min(sagittal_scale_x, sagittal_scale_y)
             print(f'sagittal_scale={sagittal_scale}')
             # Axial plane scaling calculation
-            axial_scale_x = viewport_width / y
-            axial_scale_y = viewport_height / x
+            axial_scale_x = viewport_width / x
+            axial_scale_y = viewport_height / y
             axial_scale = min(axial_scale_x, axial_scale_y)
             print(f'axial_scale={axial_scale}')
             
@@ -178,8 +178,8 @@ class ViewerUI:
             
             # Horizontal layout offset calculation
             self.translate_offset = {
-                'sagittal': (-x * sagittal_scale / 2, -50),
-                'axial': (-x * axial_scale / 2, -100)
+                'sagittal': (-x * sagittal_scale / 2 - 70, -50),
+                'axial': (-x * axial_scale / 2 - 70, -100)
             }
 
         for view in ['sagittal', 'axial']:

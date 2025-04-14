@@ -135,7 +135,7 @@ def main():
     points_layer = viewer3d.get_points_layer()
 
     # viewer.window._qt_window.showFullScreen() # full screen
-    QTimer.singleShot(100, lambda: [
+    QTimer.singleShot(50, lambda: [
         [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
         viewer.window._qt_window.menuBar().setVisible(False),
         viewer.window._qt_window.statusBar().setVisible(False),
