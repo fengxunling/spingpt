@@ -38,10 +38,17 @@ Now, the user can interact with it through the text.
 1. Set up the environment.
 ```bash
 conda env create -f environment.yml
+conda create -n interface_env python=3.10
 ```
 2. Run the environment.
 ```bash
-conda activate <name of your environment>
+conda activate interface_env
+pip install numpy
+pip install imageio, mss, medvol, napari
+pip install nibabel
+pip install PyQt5 
+pip install sounddevice, opencv-python, openai-whisper, moviepy
+pip install ollama
 ```
 
 3. cd to the project and run the python file.
