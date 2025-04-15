@@ -8,7 +8,7 @@ from scipy.io.wavfile import write
 
 def transcribe_audio(input_audio_path, output_txt_path="transcription_en.txt"):
     # load the Whisper model
-    model = whisper.load_model("base")
+    model = whisper.load_model("medium")
     
     # perform speech recognition (directly using audio files)
     result = model.transcribe(input_audio_path, task="transcribe", language="en")
