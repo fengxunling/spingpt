@@ -4,4 +4,5 @@
 /NeuroRecord
 *.zip
 /labelImg
-/recorded_materials
+*.mp4
+*.wav
