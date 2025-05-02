@@ -384,7 +384,8 @@ class ViewerUI:
     def _update_slices(self, event):
         """Slice update logic"""
         # z, y, x = viewer.dims.current_step
-        z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) # add bounder check
+        # z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1)
+        z = self.image_array.shape[0] - np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) + 1
         y = np.clip(self.viewer.dims.current_step[1], 0, self.image_array.shape[1]-1)
         x = np.clip(self.viewer.dims.current_step[2], 0, self.image_array.shape[2]-1)
 
