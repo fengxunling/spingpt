@@ -72,7 +72,9 @@ def main():
         print(f"File path does not exist: {filepath}")
         sys.exit(1)
 
-    image_name = os.path.splitext(os.path.basename(filepath))[0]
+    rel_path = os.path.relpath(filepath, IMAGE_PATH)
+    image_name = os.path.splitext(rel_path)[0].replace('/', '_').replace('\\', '_')
+    recorder.image_name = image_name
     recorder.image_name = image_name
 
     # read the image data
@@ -134,7 +136,6 @@ def main():
     viewer = viewer3d.get_viewer()
     points_layer = viewer3d.get_points_layer()
 
-    # viewer.window._qt_window.showFullScreen() # full screen
     QTimer.singleShot(50, lambda: [
         [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
         viewer.window._qt_window.menuBar().setVisible(False),
@@ -142,8 +143,15 @@ def main():
         [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
          if btn.objectName() not in ["audio_record_btn", "ai_submit_btn"]],  # add audio_record_btn
     ])
-
-
+    
+    # Add timer for auto-start recording after UI loading completes
+    QTimer.singleShot(500, lambda: [
+        recorder.start_recording(viewer),
+        viewer3d.get_status_label().setText("Recording status: recording..."),
+        viewer3d.get_status_label().setStyleSheet("color: red;"),
+        print("start recording automatically...")
+    ])
+    
     # Connect dimension updates
     viewer.dims.events.current_step.connect(update_slices)
 
@@ -209,9 +217,9 @@ def main():
             coord_str = f"Physical coordinates: {np.round(physical_coord, 2).tolist()}"
             
             # Write information to log file
-            timestamp = datetime.now().strftime('%H:%M:%S')
+            timestamp_log = datetime.now().strftime('%H:%M:%S')
             try:
-                log_text = f"[Rectangle Annotation] {timestamp}\n{coord_str}\nNote: {viewer3d.annotation_edit.text()}------------------------\n"
+                log_text = f"[Rectangle Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_filename}\n------------------------\n"
                 recorder.add_annotation(log_text)  # Call recorder's recording method
             except Exception as e:
                 print(f"Error writing annotation: {str(e)}")
@@ -225,15 +233,16 @@ def main():
             
             # Define rect_id before metadata initialization
             rect_id = len(viewer3d.rect_metadata)  # Add rect_id definition
+            audio_path = f"{recorder.image_name}_annotation.wav"
             viewer3d.rect_metadata[rect_id] = {
                 "text": "",
-                "audio": "",
+                "audio": audio_path,  # save the audio_filename
                 "coords": physical_coord.tolist(),
                 "slice_indices": (current_z, current_y, current_x)
             }
 
             # Create list item with user data (rect_id)
-            item = QListWidgetItem(f"add points...")
+            item = QListWidgetItem(f"Rectangle {rect_id+1} - {audio_path}")
             item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
             viewer3d.rect_list.addItem(item)
 

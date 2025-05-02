@@ -472,11 +472,10 @@ class ViewerUI:
         audio_data = np.concatenate(self.audio_frames, axis=0)
         
         # Generate filename
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        audio_path = os.path.join(self.RECORD_PATH, f"recording_{timestamp}.wav")
+        audio_path = f"{self.recorder.image_name}_annotation.wav"
         
         # Save WAV file
-        write(audio_path, self.fs, audio_data)
+        write(os.path.dirname(__file__)+'/recorded_materials/'+audio_path, self.fs, audio_data)
         
         # # Call transcription function
         # txt_path = audio_path.replace('.wav', '.txt')
