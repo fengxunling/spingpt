@@ -494,7 +494,7 @@ class ViewerUI:
         if not command:
             return
         
-        # 异步处理AI命令
+        # Process AI command asynchronously
         def async_ai_process():
             try:
                 result = generate_napari_code(command)

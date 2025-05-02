@@ -8,11 +8,10 @@ from scipy.io.wavfile import write
 
 def transcribe_audio(input_audio_path, output_txt_path="transcription_en.txt"):
     # load the Whisper model
-    model = whisper.load_model("base")
+    model = whisper.load_model("medium")
     
     # perform speech recognition (directly using audio files)
     result = model.transcribe(input_audio_path, task="transcribe", language="en")
-    
     # save the English subtitles
     with open(output_txt_path, "w", encoding="utf-8") as f:
         f.write(result["text"])
@@ -41,5 +40,6 @@ def transcribe_video(input_path, output_txt_path="transcription_en.txt"):
     
 
 if __name__ == "__main__":
-    file_path = os.path.dirname(__file__)+'/record_materials/'
-    transcribe_audio("test.wav", "output_audio.txt")
+    file_path = os.path.dirname(__file__)+'/../recorded_materials/'
+    video_name = 'recording_20250415_163135.wav'
+    transcribe_audio(file_path+video_name, f'{video_name[:-4]}.txt')
