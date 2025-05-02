@@ -472,7 +472,9 @@ class ViewerUI:
         audio_data = np.concatenate(self.audio_frames, axis=0)
         
         # Generate filename
-        audio_path = f"{self.recorder.image_name}_annotation.wav"
+        current_rect = self.rect_list.currentRow()
+        rect_id = current_rect if current_rect != -1 else len(self.rect_metadata)
+        audio_path = f"{self.recorder.image_name}_rect{rect_id}_annotation.wav"
         
         # Save WAV file
         write(os.path.dirname(__file__)+'/recorded_materials/'+audio_path, self.fs, audio_data)
