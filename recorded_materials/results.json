@@ -4,8 +4,26 @@
         "image_source": [
             "/data/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
         ],
-        "rectangle_id": "",
-        "coordinate": "(92,69), (107,96)",
+        "rectangle_id": "rect_20250506_2008_06_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_log.txt_0",
+        "coordinate": "[[323.33, 234.97], [323.33, 344.08], [404.46, 344.08], [404.46, 234.97]]",
+        "annotation": "/recorded_materials/data_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz_transcription.txt"
+    },
+    {
+        "id": "data_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz",
+        "image_source": [
+            "/data/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
+        ],
+        "rectangle_id": "rect_20250506_2008_06_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_log.txt_1",
+        "coordinate": "[[503.77, 320.3], [503.77, 432.2], [576.51, 432.2], [576.51, 320.3]]",
+        "annotation": "/recorded_materials/data_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz_transcription.txt"
+    },
+    {
+        "id": "data_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz",
+        "image_source": [
+            "/data/T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
+        ],
+        "rectangle_id": "rect_20250506_2008_06_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_log.txt_2",
+        "coordinate": "[[645.05, 265.75], [645.05, 409.82], [702.4, 409.82], [702.4, 265.75]]",
         "annotation": "/recorded_materials/data_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz_transcription.txt"
     },
     {
@@ -49,54 +67,9 @@
         "image_source": [
             "/data/CERVICAL-FMRI/sub-01/sub-01_ses-01_T2w.nii.gz"
         ],
-        "rectangle_id": "rect_20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt_1",
-        "coordinate": "[387.3, 290.97",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
-    },
-    {
-        "id": "data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz",
-        "image_source": [
-            "/data/CERVICAL-FMRI/sub-01/sub-01_ses-01_T2w.nii.gz"
-        ],
-        "rectangle_id": "rect_20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt_2",
-        "coordinate": "[387.3, 290.97",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
-    },
-    {
-        "id": "data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz",
-        "image_source": [
-            "/data/CERVICAL-FMRI/sub-01/sub-01_ses-01_T2w.nii.gz"
-        ],
-        "rectangle_id": "rect_20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt_3",
-        "coordinate": "[376.99, 286.7",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
-    },
-    {
-        "id": "data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz",
-        "image_source": [
-            "/data/CERVICAL-FMRI/sub-01/sub-01_ses-01_T2w.nii.gz"
-        ],
-        "rectangle_id": "rect_20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt_4",
-        "coordinate": "[376.99, 286.7",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
-    },
-    {
-        "id": "data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz",
-        "image_source": [
-            "/data/CERVICAL-FMRI/sub-01/sub-01_ses-01_T2w.nii.gz"
-        ],
-        "rectangle_id": "rect_20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt_5",
-        "coordinate": "[373.32, 289.64",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
-    },
-    {
-        "id": "data_CERVICAL-FMRI_sub-02_sub-02_ses-01_T2w.nii.gz",
-        "image_source": [
-            "/data/CERVICAL-FMRI/sub-02/sub-02_ses-01_T2w.nii.gz"
-        ],
         "rectangle_id": "",
         "coordinate": "(92,69), (107,96)",
-        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-02_sub-02_ses-01_T2w.nii.gz_transcription.txt"
+        "annotation": "/recorded_materials/data_CERVICAL-FMRI_sub-01_sub-01_ses-01_T2w.nii.gz_transcription.txt"
     },
     {
         "id": "data_CERVICAL-FMRI_sub-02_sub-02_ses-01_T2w.nii.gz",

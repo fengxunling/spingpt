@@ -16,6 +16,7 @@ from scipy.io.wavfile import write
 from utils.transcribe import transcribe_audio  
 from utils.llm import generate_napari_code 
 import re
+import textwrap
 
 class ViewerUI:
     def __init__(self, image_array, metadata, filepath, recorder, RECORD_PATH, visible_views=['sagittal', 'axial']):
@@ -488,7 +489,10 @@ class ViewerUI:
         # with open(txt_path, 'r', encoding='utf-8') as f:
         #     self.annotation_edit.setText(f.read())
 
-        self.ai_response.setText(f"audio is saved at: {audio_path}")
+        audio_path_message = f"audio is saved at: {audio_path}"
+        wrapped_message = textwrap.fill(audio_path_message, width=28)  
+        self.ai_response.setText(wrapped_message)
+        
 
     def _handle_ai_command(self):
         """Handle AI commands"""

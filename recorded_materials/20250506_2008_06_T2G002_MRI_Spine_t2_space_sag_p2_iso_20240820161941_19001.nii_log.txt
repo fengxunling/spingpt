@@ -1,0 +1,23 @@
+
+[Video Recording Started] 2025-05-06 20:08:06.951
+[Annotation] 2025-05-06 20:08:26.997
+Content: [Rectangle 0 Annotation] 20:08:13
+Physical coordinates: [[323.33, 234.97], [323.33, 344.08], [404.46, 344.08], [404.46, 234.97]]
+Note: Audio: T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_rect0_annotation.wav
+(x=328, y=504, z=320)
+------------------------
+[Rectangle 1 Annotation] 20:08:18
+Physical coordinates: [[503.77, 320.3], [503.77, 432.2], [576.51, 432.2], [576.51, 320.3]]
+Note: Audio: T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_rect2_annotation.wav
+(x=328, y=504, z=320)
+------------------------
+[Rectangle 2 Annotation] 20:08:21
+Physical coordinates: [[645.05, 265.75], [645.05, 409.82], [702.4, 409.82], [702.4, 265.75]]
+Note: Audio: T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_rect4_annotation.wav
+(x=328, y=504, z=320)
+------------------------
+
+------------------------
+[Video Recording Ended] 2025-05-06 20:08:27.003
+[Duration] 20.05 seconds
+

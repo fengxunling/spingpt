@@ -6,8 +6,8 @@ from datetime import datetime
 
 def extract_id_from_log_filename(log_filename):
     """从日志文件名中提取图像ID"""
-    # 示例: 20250415_1630_26_sub-01_ses-01_T2w.nii_log.txt
-    # 提取 sub-01_ses-01_T2w.nii 部分
+    # 示例: 20250506_2008_06_T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii_log.txt
+    # 提取 T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii 部分
     match = re.search(r'(\d+_\d+_\d+_)(.+?)(_log\.txt)', log_filename)
     if match:
         return match.group(2)  # 返回中间部分
@@ -22,19 +22,20 @@ def parse_log_file(log_path):
             content = f.read()
             
         # 提取所有矩形标注
-        rectangle_pattern = r'\[Rectangle Annotation\].*?\nPhysical coordinates: \[(.*?)\]'
+        # 新的正则表达式模式，匹配新格式的矩形标注
+        rectangle_pattern = r'\[Rectangle (\d+) Annotation\].*?\nPhysical coordinates: (\[\[.*?\]\])'
         matches = re.findall(rectangle_pattern, content, re.DOTALL)
         
-        for i, match in enumerate(matches):
-            # 提取坐标
-            coords = match.strip()
-            if coords:
-                # 创建唯一的rectangle_id
-                rectangle_id = f"rect_{os.path.basename(log_path)}_{i+1}"
-                annotations.append({
-                    "rectangle_id": rectangle_id,
-                    "coordinate": coords
-                })
+        for rect_id, coords in matches:
+            # 创建唯一的rectangle_id
+            log_basename = os.path.basename(log_path)
+            rectangle_id = f"rect_{log_basename}_{rect_id}"
+            
+            # 提取坐标字符串
+            annotations.append({
+                "rectangle_id": rectangle_id,
+                "coordinate": coords
+            })
     except Exception as e:
         print(f"解析日志文件 {log_path} 时出错: {e}")
     

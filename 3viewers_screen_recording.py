@@ -367,7 +367,7 @@ def main():
         
         # Create or get rectangle layer
         if 'add rectangle' not in viewer.layers:
-            print(f'====not have add rectangle layer===')
+            # print(f'====not have add rectangle layer===')
             shapes_layer = viewer.add_shapes(
                 name='add rectangle',
                 shape_type='rectangle',
@@ -382,7 +382,7 @@ def main():
             # Set flag immediately during initialization
             shapes_layer._event_connected = False  # Add initialization flag
         else:
-            print(f'====already have add rectangle layer===')
+            # print(f'====already have add rectangle layer===')
             shapes_layer = viewer.layers['add rectangle']
             shapes_layer.visible = True
             # Precisely disconnect the specified event handler
@@ -393,9 +393,7 @@ def main():
 
         # Ensure single event binding
         if not getattr(shapes_layer, '_event_connected', False):
-            print(f'hhhhh')
             shapes_layer.events.data.connect(on_shape_added)
-            print(f'aaaaaa')
             shapes_layer._event_connected = True  # Update flag
 
         # Disable interaction with other layers
