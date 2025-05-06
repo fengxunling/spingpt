@@ -220,7 +220,7 @@ def main():
 
             # Define rect_id before metadata initialization
             rect_id = len(viewer3d.rect_metadata)  # Add rect_id definition
-            audio_path = f"{recorder.image_name}_rect{rect_id}_annotation.wav"
+            # audio_path = f"{recorder.image_name}_rect{rect_id}_annotation.wav"
             # Get current slice position
             current_z, current_y, current_x = viewer.dims.current_step
             print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
@@ -229,7 +229,7 @@ def main():
             timestamp_log = datetime.now().strftime('%H:%M:%S')
             viewer3d.rect_metadata[rect_id] = {
                 "text": "",
-                "audio": audio_path,  # save the audio_filename
+                # "audio": audio_path,  # save the audio_filename
                 "coords": physical_coord.tolist(),
                 "slice_indices": (current_z, current_y, current_x),
                 "timestamp": timestamp_log,
