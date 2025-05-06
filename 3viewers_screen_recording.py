@@ -254,11 +254,11 @@ def main():
         if not viewer3d.rect_metadata:
             return
         
-        # 检查重复坐标的矩形
+        # check for duplicate coordinates
         unique_coords = {}
         duplicate_ids = set()
         
-        # 第一步：找出所有重复坐标的矩形
+        # first: find all duplicate coordinates
         for rect_id, metadata in viewer3d.rect_metadata.items():
             coords_tuple = tuple(map(tuple, metadata.get("coords", [])))
             if coords_tuple in unique_coords:
@@ -266,13 +266,13 @@ def main():
             else:
                 unique_coords[coords_tuple] = rect_id
         
-        # 第二步：移除重复的矩形
+        # second: remove duplicate coordinates
         for dup_id in duplicate_ids:
             if dup_id in viewer3d.rect_metadata:
-                print(f"移除重复坐标的矩形 ID: {dup_id}")
+                print(f"remove duplicated rectangle ID: {dup_id}")
                 del viewer3d.rect_metadata[dup_id]
         
-        # 第三步：重新排序矩形编号
+        # third: update rect_id and rect_metadata
         old_to_new_id = {}
         new_metadata = {}
         
@@ -282,7 +282,7 @@ def main():
         
         viewer3d.rect_metadata = new_metadata
         
-        # 更新矩形列表
+        # update rectangle_list
         viewer3d.rect_list.clear()
         for rect_id, metadata in viewer3d.rect_metadata.items():
             audio_path = metadata.get("audio", "")
@@ -290,7 +290,7 @@ def main():
             item.setData(Qt.UserRole, rect_id)
             viewer3d.rect_list.addItem(item)
         
-        # 生成所有注释
+        # generate all annotations
         all_annotations = []
         for rect_id, metadata in viewer3d.rect_metadata.items():
             timestamp_log = metadata.get("timestamp", datetime.now().strftime('%H:%M:%S'))
@@ -301,13 +301,13 @@ def main():
             log_text = f"[Rectangle {rect_id} Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_path}\n(x={current_x}, y={current_y}, z={current_z})\n------------------------\n"
             all_annotations.append(log_text)
         
-        # 将所有注释一次性添加到日志
+        # Add all annotations to the log at once
         if all_annotations and recorder.is_recording:
             try:
                 recorder.add_annotation("".join(all_annotations))
-                print(f"添加了 {len(all_annotations)} 个注释到日志")
+                print(f"Added {len(all_annotations)} annotations to the log")
             except Exception as e:
-                print(f"写入注释时出错: {str(e)}")
+                print(f"Error writing annotations: {str(e)}")
 
 
     # ================= bind with key ======================
