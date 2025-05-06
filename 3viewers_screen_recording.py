@@ -163,41 +163,41 @@ def main():
         face_color='red'
     )
 
-    def on_points_changed(event):
-        nonlocal previous_length
+    # def on_points_changed(event):
+    #     nonlocal previous_length
 
-        """Points layer change handler"""
-        current_data = points_layer.data
-        current_length = len(current_data)
+    #     """Points layer change handler"""
+    #     current_data = points_layer.data
+    #     current_length = len(current_data)
         
-        if current_length > previous_length:
-            new_points = current_data[previous_length:current_length]
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+    #     if current_length > previous_length:
+    #         new_points = current_data[previous_length:current_length]
+    #         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
             
-            current_step = viewer.dims.current_step
-            print(f'current_step={current_step}')
-            image_layer = viewer.layers['Sagittal']
-            image_bias = np.array([0, 0]) * image_layer.scale + image_layer.translate
+    #         current_step = viewer.dims.current_step
+    #         print(f'current_step={current_step}')
+    #         image_layer = viewer.layers['Sagittal']
+    #         image_bias = np.array([0, 0]) * image_layer.scale + image_layer.translate
             
-            log_info = []
-            for pt in new_points:
-                pt_modified = np.array(pt)
-                pt_modified[1] = current_step[1]
-                physical_coord = pt_modified - np.array([image_bias[1], 0, image_bias[0]])
-                log_entry = (
-                    f"[Point Annotation] {timestamp}\n"
-                    f"Spatial coordinates: {np.round(physical_coord, 0)}\n"
-                    f"Current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
-                    "------------------------\n"
-                )
-                log_info.append(log_entry)
+            # log_info = []
+            # for pt in new_points:
+            #     pt_modified = np.array(pt)
+            #     pt_modified[1] = current_step[1]
+            #     physical_coord = pt_modified - np.array([image_bias[1], 0, image_bias[0]])
+            #     log_entry = (
+            #         f"[Point Annotation] {timestamp}\n"
+            #         f"Spatial coordinates: {np.round(physical_coord, 0)}\n"
+            #         f"Current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
+            #         "------------------------\n"
+            #     )
+            #     log_info.append(log_entry)
             
-            if recorder.is_recording: 
-                recorder.add_annotation(log_info)
+            # if recorder.is_recording: 
+            #     recorder.add_annotation(log_info)
             
-            previous_length = current_length
+    #         previous_length = current_length
 
-    points_layer.events.data.connect(on_points_changed)
+    # points_layer.events.data.connect(on_points_changed)
 
     def on_shape_added(event):
         print(f'====on_shape_added')
@@ -225,22 +225,15 @@ def main():
             current_z, current_y, current_x = viewer.dims.current_step
             print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
             
-            # Write information to log file
+            # 只保存元数据，不立即写入日志
             timestamp_log = datetime.now().strftime('%H:%M:%S')
-            try:
-                log_text = f"[Rectangle {rect_id} Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_path}\n(x={current_x}, y={current_y}, z={current_z})\n------------------------\n"
-                recorder.add_annotation(log_text)  # Call recorder's recording method
-            except Exception as e:
-                print(f"Error writing annotation: {str(e)}")
-                if recorder.is_recording:
-                    recorder.stop_recording()
-                    print("Recording stopped due to annotation error")
-            
             viewer3d.rect_metadata[rect_id] = {
                 "text": "",
                 "audio": audio_path,  # save the audio_filename
                 "coords": physical_coord.tolist(),
-                "slice_indices": (current_z, current_y, current_x)
+                "slice_indices": (current_z, current_y, current_x),
+                "timestamp": timestamp_log,
+                "coord_str": coord_str
             }
 
             # Create list item with user data (rect_id)
@@ -256,6 +249,28 @@ def main():
         # Connect double-click event (should be set during ViewerUI initialization)
         viewer3d.rect_list.itemDoubleClicked.connect(viewer3d.on_rect_item_clicked)
 
+    def save_all_annotations():
+        """Save all rectangle annotations to log at once"""
+        if not viewer3d.rect_metadata:
+            return
+        
+        all_annotations = []
+        for rect_id, metadata in viewer3d.rect_metadata.items():
+            timestamp_log = metadata.get("timestamp", datetime.now().strftime('%H:%M:%S'))
+            coord_str = metadata.get("coord_str", "")
+            audio_path = metadata.get("audio", "")
+            current_z, current_y, current_x = metadata.get("slice_indices", (0, 0, 0))
+            
+            log_text = f"[Rectangle {rect_id} Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_path}\n(x={current_x}, y={current_y}, z={current_z})\n------------------------\n"
+            all_annotations.append(log_text)
+        
+        # 将所有注释一次性添加到日志
+        if all_annotations and recorder.is_recording:
+            try:
+                recorder.add_annotation("".join(all_annotations))
+                print(f"Added {len(all_annotations)} annotations to log")
+            except Exception as e:
+                print(f"Error writing annotations: {str(e)}")
 
     # ================= bind with key ======================
     @viewer.bind_key('M')  # press to start/stop recording
@@ -276,6 +291,7 @@ def main():
     def close_window(viewer):
         """close current window"""
         if recorder.is_recording:
+            save_all_annotations() 
             recorder.stop_recording()
         viewer.window.close()
 
@@ -313,6 +329,7 @@ def main():
         
         # Create or get rectangle layer
         if 'add rectangle' not in viewer.layers:
+            print(f'====not have add rectangle layer===')
             shapes_layer = viewer.add_shapes(
                 name='add rectangle',
                 shape_type='rectangle',
@@ -327,6 +344,7 @@ def main():
             # Set flag immediately during initialization
             shapes_layer._event_connected = False  # Add initialization flag
         else:
+            print(f'====already have add rectangle layer===')
             shapes_layer = viewer.layers['add rectangle']
             shapes_layer.visible = True
             # Precisely disconnect the specified event handler
@@ -337,7 +355,9 @@ def main():
 
         # Ensure single event binding
         if not getattr(shapes_layer, '_event_connected', False):
+            print(f'hhhhh')
             shapes_layer.events.data.connect(on_shape_added)
+            print(f'aaaaaa')
             shapes_layer._event_connected = True  # Update flag
 
         # Disable interaction with other layers

@@ -313,6 +313,7 @@ class ViewerUI:
     def _setup_layers(self):
         """Initialize image and points layers"""
         self.image_layer = self.viewer.add_image(self.image_array, **self.metadata, visible=False)
+        self.image_layer.editable = False  
         self._setup_ortho_views()
         self.points_layer = self.viewer.add_points(
             name='3d corresponding points',
