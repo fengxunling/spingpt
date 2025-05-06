@@ -544,7 +544,7 @@ class ViewerUI:
     def count_polygons(self):
         """Count polygons and rectangle annotations"""
         polygons = []
-        print(f'metadata={self.rect_metadata}')
+        # print(f'metadata={self.rect_metadata}')
         # Add rectangle annotation processing
         for layer in self.viewer.layers:
             if isinstance(layer, napari.layers.Shapes):

@@ -200,6 +200,7 @@ def main():
     points_layer.events.data.connect(on_points_changed)
 
     def on_shape_added(event):
+        print(f'====on_shape_added')
         """Shape addition event handler"""
 
         if not event.source.data:
@@ -208,6 +209,7 @@ def main():
 
         try:
             latest_rect = event.source.data[-1]
+            print(f'==viewer3d.rect_metadata={viewer3d.rect_metadata}')
             
             # Get physical coordinates
             image_layer = viewer.layers['Sagittal']
@@ -215,25 +217,25 @@ def main():
             origin_physical = origin_point * image_layer.scale + image_layer.translate
             physical_coord = latest_rect - origin_physical
             coord_str = f"Physical coordinates: {np.round(physical_coord, 2).tolist()}"
+
+            # Define rect_id before metadata initialization
+            rect_id = len(viewer3d.rect_metadata)  # Add rect_id definition
+            audio_path = f"{recorder.image_name}_rect{rect_id}_annotation.wav"
+            # Get current slice position
+            current_z, current_y, current_x = viewer.dims.current_step
+            print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
             
             # Write information to log file
             timestamp_log = datetime.now().strftime('%H:%M:%S')
             try:
-                log_text = f"[Rectangle Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_filename}\n------------------------\n"
+                log_text = f"[Rectangle {rect_id} Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_path}\n(x={current_x}, y={current_y}, z={current_z})\n------------------------\n"
                 recorder.add_annotation(log_text)  # Call recorder's recording method
             except Exception as e:
                 print(f"Error writing annotation: {str(e)}")
                 if recorder.is_recording:
                     recorder.stop_recording()
                     print("Recording stopped due to annotation error")
-
-            # Get current slice position
-            current_z, current_y, current_x = viewer.dims.current_step
-            print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
             
-            # Define rect_id before metadata initialization
-            rect_id = len(viewer3d.rect_metadata)  # Add rect_id definition
-            audio_path = f"{recorder.image_name}_annotation.wav"
             viewer3d.rect_metadata[rect_id] = {
                 "text": "",
                 "audio": audio_path,  # save the audio_filename
@@ -350,7 +352,7 @@ def main():
 
     @viewer.bind_key('C')  
     def refresh_polygons(viewer):
-        print('===type C key===')
+        # print('===type C key===')
         # Get all annotation data
         annotation_count, annotations = viewer3d.count_polygons()
         
