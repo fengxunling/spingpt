@@ -254,6 +254,43 @@ def main():
         if not viewer3d.rect_metadata:
             return
         
+        # 检查重复坐标的矩形
+        unique_coords = {}
+        duplicate_ids = set()
+        
+        # 第一步：找出所有重复坐标的矩形
+        for rect_id, metadata in viewer3d.rect_metadata.items():
+            coords_tuple = tuple(map(tuple, metadata.get("coords", [])))
+            if coords_tuple in unique_coords:
+                duplicate_ids.add(rect_id)
+            else:
+                unique_coords[coords_tuple] = rect_id
+        
+        # 第二步：移除重复的矩形
+        for dup_id in duplicate_ids:
+            if dup_id in viewer3d.rect_metadata:
+                print(f"移除重复坐标的矩形 ID: {dup_id}")
+                del viewer3d.rect_metadata[dup_id]
+        
+        # 第三步：重新排序矩形编号
+        old_to_new_id = {}
+        new_metadata = {}
+        
+        for new_id, (old_id, metadata) in enumerate(sorted(viewer3d.rect_metadata.items())):
+            old_to_new_id[old_id] = new_id
+            new_metadata[new_id] = metadata
+        
+        viewer3d.rect_metadata = new_metadata
+        
+        # 更新矩形列表
+        viewer3d.rect_list.clear()
+        for rect_id, metadata in viewer3d.rect_metadata.items():
+            audio_path = metadata.get("audio", "")
+            item = QListWidgetItem(f"Rectangle {rect_id+1} - {audio_path}")
+            item.setData(Qt.UserRole, rect_id)
+            viewer3d.rect_list.addItem(item)
+        
+        # 生成所有注释
         all_annotations = []
         for rect_id, metadata in viewer3d.rect_metadata.items():
             timestamp_log = metadata.get("timestamp", datetime.now().strftime('%H:%M:%S'))
@@ -268,9 +305,10 @@ def main():
         if all_annotations and recorder.is_recording:
             try:
                 recorder.add_annotation("".join(all_annotations))
-                print(f"Added {len(all_annotations)} annotations to log")
+                print(f"添加了 {len(all_annotations)} 个注释到日志")
             except Exception as e:
-                print(f"Error writing annotations: {str(e)}")
+                print(f"写入注释时出错: {str(e)}")
+
 
     # ================= bind with key ======================
     @viewer.bind_key('M')  # press to start/stop recording
