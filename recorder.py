@@ -10,7 +10,6 @@ import sounddevice as sd
 from scipy.io.wavfile import write as write_wav
 import cv2
 from PIL import Image, ImageDraw, ImageFont
-import textwrap
 
 class ScreenRecorder:
     def __init__(self, FONT_PATH, FONT_SIZE, RECORD_PATH, FPS, MAX_TEXT_DURATION):
@@ -197,10 +196,7 @@ class ScreenRecorder:
             self.capture_thread.join()
         if self.writer:
             self.writer.close()
-        
-        video_path_message = f"The video is saved at: {os.path.abspath(self.video_path)}"
-        wrapped_message = textwrap.fill(video_path_message, width=80)  # 设置宽度为80字符
-        print(wrapped_message)
+        print(f"The video is saved at: {os.path.abspath(self.video_path)}")
 
         # # stop audio recording and save
         # if self.audio_thread:
