@@ -287,7 +287,8 @@ def main():
         viewer3d.rect_list.clear()
         for rect_id, metadata in viewer3d.rect_metadata.items():
             audio_path = metadata.get("audio", "")
-            item = QListWidgetItem(f"Rectangle {rect_id+1} - {audio_path}")
+            # item = QListWidgetItem(f"Rectangle {rect_id+1} - {audio_path}")
+            item = QListWidgetItem(f"Rectangle {rect_id+1}")
             item.setData(Qt.UserRole, rect_id)
             viewer3d.rect_list.addItem(item)
         

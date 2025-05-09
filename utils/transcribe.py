@@ -41,7 +41,8 @@ def transcribe_video(input_path, output_txt_path="transcription_en.txt"):
     
 
 if __name__ == "__main__":
-    input_dir = os.path.join(os.path.dirname(__file__), 'recorded_materials')
+    input_dir = os.path.join(os.path.dirname(__file__), '..', 'recorded_materials')
+    print(f'input_dir: {input_dir}')
     output_dir = input_dir 
     
     for filename in os.listdir(input_dir):
