@@ -29,14 +29,15 @@ def process_nifti(filepath, output_dir):
     
     # 生成三个方向的切片图像
     slices = [
-        ('axial', data[:, :, slice_z]),
-        ('coronal', data[:, slice_y, :]),
-        ('sagittal', data[slice_x, :, :])
+        ('axial', data[:, :, slice_z], f"z={slice_z}"),
+        ('coronal', data[:, slice_y, :], f"y={slice_y}"),
+        ('sagittal', data[slice_x, :, :], f"x={slice_x}")
     ]
     
     image_paths = []
+    slice_indices = []
     
-    for name, slice_data in slices:
+    for name, slice_data, slice_index in slices:
         # 归一化数据以便显示
         slice_data = slice_data.T  # 转置以获得正确的方向
         if slice_data.max() > 0:
@@ -54,8 +55,9 @@ def process_nifti(filepath, output_dir):
         plt.close()
         
         image_paths.append(filename)
+        slice_indices.append(slice_index)
     
-    return image_paths
+    return image_paths, slice_indices
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -72,7 +74,7 @@ def index():
             file.save(filename)
             
             # 处理NIfTI文件并生成图像
-            image_paths = process_nifti(filename, app.config['IMAGES_FOLDER'])
+            image_paths, slice_indices = process_nifti(filename, app.config['IMAGES_FOLDER'])
             
             # 返回包含图像路径的HTML页面
             return render_template_string('''
@@ -89,6 +91,7 @@ def index():
                     .image-box img { max-width: 100%; height: auto; border: 1px solid #ddd; }
                     .back-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; text-decoration: none; display: inline-block; }
                     .back-btn:hover { background-color: #45a049; }
+                    .slice-info { font-weight: bold; color: #555; margin-top: 5px; }
                 </style>
             </head>
             <body>
@@ -96,10 +99,11 @@ def index():
                 <div class="container">
                     <h2>文件: {{ filename }}</h2>
                     <div class="image-container">
-                        {% for image in images %}
+                        {% for i in range(images|length) %}
                         <div class="image-box">
-                            <h3>{{ image.split('_')[-1].split('.')[0] }}</h3>
-                            <img src="{{ url_for('static', filename='images/' + image) }}" alt="{{ image }}">
+                            <h3>{{ images[i].split('_')[-1].split('.')[0] }}</h3>
+                            <div class="slice-info">{{ slice_indices[i] }}</div>
+                            <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}">
                         </div>
                         {% endfor %}
                     </div>
@@ -107,7 +111,7 @@ def index():
                 </div>
             </body>
             </html>
-            ''', filename=file.filename, images=image_paths)
+            ''', filename=file.filename, images=image_paths, slice_indices=slice_indices)
         else:
             return jsonify({'error': '请上传.nii.gz格式的文件'})
     
