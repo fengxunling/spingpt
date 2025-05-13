@@ -1,0 +1,70 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    padding: 20px 0;
+}
+
+.header {
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+.card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 20px;
+}
+
+.file-browser, .annotation-panel {
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.viewer-area {
+    height: calc(100vh - 100px);
+    overflow-y: auto;
+}
+
+.view-container {
+    margin-bottom: 15px;
+    text-align: center;
+}
+
+canvas {
+    background-color: #000;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+}
+
+.view-3d {
+    height: 300px;
+    background-color: #000;
+    border: 1px solid #ddd;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+}
+
+.ai-response-box {
+    min-height: 100px;
+    max-height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background-color: #f8f9fa;
+}
+
+.annotation-list {
+    margin-top: 20px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.list-group-item {
+    cursor: pointer;
+}
+
+.list-group-item:hover {
+    background-color: #f0f0f0;
+}
