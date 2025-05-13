@@ -16,16 +16,24 @@ os.makedirs(IMAGES_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['IMAGES_FOLDER'] = IMAGES_FOLDER
 
-def process_nifti(filepath, output_dir):
+def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None):
     """处理NIfTI文件并生成图像"""
     # 加载NIfTI文件
     img = nib.load(filepath)
     data = img.get_fdata()
     
-    # 获取中间切片
-    slice_x = data.shape[0] // 2
-    slice_y = data.shape[1] // 2
-    slice_z = data.shape[2] // 2
+    # 如果没有提供切片索引，则使用中间切片
+    if slice_x is None:
+        slice_x = data.shape[0] // 2
+    if slice_y is None:
+        slice_y = data.shape[1] // 2
+    if slice_z is None:
+        slice_z = data.shape[2] // 2
+    
+    # 确保切片索引在有效范围内
+    slice_x = max(0, min(slice_x, data.shape[0] - 1))
+    slice_y = max(0, min(slice_y, data.shape[1] - 1))
+    slice_z = max(0, min(slice_z, data.shape[2] - 1))
     
     # 生成三个方向的切片图像
     slices = [
@@ -57,7 +65,34 @@ def process_nifti(filepath, output_dir):
         image_paths.append(filename)
         slice_indices.append(slice_index)
     
-    return image_paths, slice_indices
+    return image_paths, slice_indices, [data.shape[0], data.shape[1], data.shape[2]]
+
+@app.route('/update_slice', methods=['POST'])
+def update_slice():
+    """更新切片索引并返回新图像"""
+    data = request.json
+    filename = data.get('filename')
+    slice_x = int(data.get('slice_x'))
+    slice_y = int(data.get('slice_y'))
+    slice_z = int(data.get('slice_z'))
+    
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.exists(filepath):
+        return jsonify({'error': '文件不存在'})
+    
+    # 处理NIfTI文件并生成新图像
+    image_paths, slice_indices, _ = process_nifti(
+        filepath, 
+        app.config['IMAGES_FOLDER'],
+        slice_x=slice_x,
+        slice_y=slice_y,
+        slice_z=slice_z
+    )
+    
+    return jsonify({
+        'images': image_paths,
+        'slice_indices': slice_indices
+    })
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -74,7 +109,7 @@ def index():
             file.save(filename)
             
             # 处理NIfTI文件并生成图像
-            image_paths, slice_indices = process_nifti(filename, app.config['IMAGES_FOLDER'])
+            image_paths, slice_indices, dimensions = process_nifti(filename, app.config['IMAGES_FOLDER'])
             
             # 返回包含图像路径的HTML页面
             return render_template_string('''
@@ -92,26 +127,117 @@ def index():
                     .back-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; text-decoration: none; display: inline-block; }
                     .back-btn:hover { background-color: #45a049; }
                     .slice-info { font-weight: bold; color: #555; margin-top: 5px; }
+                    .slider-container { margin: 20px 0; }
+                    .slider-label { display: inline-block; width: 80px; text-align: right; margin-right: 10px; }
+                    .slider { width: 300px; }
+                    .loading { display: none; margin: 20px auto; }
                 </style>
+                <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             </head>
             <body>
                 <h1>医学影像查看</h1>
                 <div class="container">
                     <h2>文件: {{ filename }}</h2>
-                    <div class="image-container">
+                    
+                    <div class="slider-container">
+                        <label class="slider-label">X轴切片:</label>
+                        <input type="range" id="slice-x" class="slider" min="0" max="{{ dimensions[0]-1 }}" value="{{ dimensions[0]//2 }}">
+                        <span id="slice-x-value">{{ dimensions[0]//2 }}</span>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label class="slider-label">Y轴切片:</label>
+                        <input type="range" id="slice-y" class="slider" min="0" max="{{ dimensions[1]-1 }}" value="{{ dimensions[1]//2 }}">
+                        <span id="slice-y-value">{{ dimensions[1]//2 }}</span>
+                    </div>
+                    
+                    <div class="slider-container">
+                        <label class="slider-label">Z轴切片:</label>
+                        <input type="range" id="slice-z" class="slider" min="0" max="{{ dimensions[2]-1 }}" value="{{ dimensions[2]//2 }}">
+                        <span id="slice-z-value">{{ dimensions[2]//2 }}</span>
+                    </div>
+                    
+                    <div class="loading">更新中...</div>
+                    
+                    <div class="image-container" id="image-container">
                         {% for i in range(images|length) %}
                         <div class="image-box">
                             <h3>{{ images[i].split('_')[-1].split('.')[0] }}</h3>
-                            <div class="slice-info">{{ slice_indices[i] }}</div>
-                            <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}">
+                            <div class="slice-info" id="slice-info-{{ i }}">{{ slice_indices[i] }}</div>
+                            <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}" id="image-{{ i }}">
                         </div>
                         {% endfor %}
                     </div>
                     <a href="/" class="back-btn">返回上传页面</a>
                 </div>
+                
+                <script>
+                    // 防抖函数
+                    function debounce(func, wait) {
+                        let timeout;
+                        return function() {
+                            const context = this;
+                            const args = arguments;
+                            clearTimeout(timeout);
+                            timeout = setTimeout(() => {
+                                func.apply(context, args);
+                            }, wait);
+                        };
+                    }
+                    
+                    // 更新切片显示
+                    const updateSlices = debounce(function() {
+                        $('.loading').show();
+                        
+                        const sliceX = $('#slice-x').val();
+                        const sliceY = $('#slice-y').val();
+                        const sliceZ = $('#slice-z').val();
+                        
+                        $.ajax({
+                            url: '/update_slice',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                filename: '{{ filename }}',
+                                slice_x: sliceX,
+                                slice_y: sliceY,
+                                slice_z: sliceZ
+                            }),
+                            success: function(response) {
+                                // 更新图像
+                                for (let i = 0; i < response.images.length; i++) {
+                                    const imgPath = '/static/images/' + response.images[i] + '?t=' + new Date().getTime();
+                                    $('#image-' + i).attr('src', imgPath);
+                                    $('#slice-info-' + i).text(response.slice_indices[i]);
+                                }
+                                $('.loading').hide();
+                            },
+                            error: function() {
+                                alert('更新切片失败');
+                                $('.loading').hide();
+                            }
+                        });
+                    }, 300);
+                    
+                    // 监听滑块变化
+                    $('#slice-x').on('input', function() {
+                        $('#slice-x-value').text($(this).val());
+                    });
+                    
+                    $('#slice-y').on('input', function() {
+                        $('#slice-y-value').text($(this).val());
+                    });
+                    
+                    $('#slice-z').on('input', function() {
+                        $('#slice-z-value').text($(this).val());
+                    });
+                    
+                    // 滑块停止拖动后更新图像
+                    $('#slice-x, #slice-y, #slice-z').on('change', updateSlices);
+                </script>
             </body>
             </html>
-            ''', filename=file.filename, images=image_paths, slice_indices=slice_indices)
+            ''', filename=file.filename, images=image_paths, slice_indices=slice_indices, dimensions=dimensions)
         else:
             return jsonify({'error': '请上传.nii.gz格式的文件'})
     
