@@ -120,9 +120,9 @@ def index():
                 <style>
                     body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
                     h1 { color: #333; }
-                    .container { margin: 30px auto; max-width: 900px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-                    .image-container { display: flex; flex-wrap: wrap; justify-content: center; }
-                    .image-box { margin: 10px; text-align: center; }
+                    .container { margin: 30px auto; max-width: 1200px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
+                    .image-container { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+                    .image-box { flex: 1; margin: 0 10px; text-align: center; }
                     .image-box img { max-width: 100%; height: auto; border: 1px solid #ddd; }
                     .back-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; text-decoration: none; display: inline-block; }
                     .back-btn:hover { background-color: #45a049; }
@@ -131,6 +131,8 @@ def index():
                     .slider-label { display: inline-block; width: 80px; text-align: right; margin-right: 10px; }
                     .slider { width: 300px; }
                     .loading { display: none; margin: 20px auto; }
+                    .controls-container { display: flex; justify-content: space-around; flex-wrap: wrap; }
+                    .control-group { margin: 10px; min-width: 350px; }
                 </style>
                 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             </head>
@@ -139,22 +141,26 @@ def index():
                 <div class="container">
                     <h2>文件: {{ filename }}</h2>
                     
-                    <div class="slider-container">
-                        <label class="slider-label">X轴切片:</label>
-                        <input type="range" id="slice-x" class="slider" min="0" max="{{ dimensions[0]-1 }}" value="{{ dimensions[0]//2 }}">
-                        <span id="slice-x-value">{{ dimensions[0]//2 }}</span>
-                    </div>
-                    
-                    <div class="slider-container">
-                        <label class="slider-label">Y轴切片:</label>
-                        <input type="range" id="slice-y" class="slider" min="0" max="{{ dimensions[1]-1 }}" value="{{ dimensions[1]//2 }}">
-                        <span id="slice-y-value">{{ dimensions[1]//2 }}</span>
-                    </div>
-                    
-                    <div class="slider-container">
-                        <label class="slider-label">Z轴切片:</label>
-                        <input type="range" id="slice-z" class="slider" min="0" max="{{ dimensions[2]-1 }}" value="{{ dimensions[2]//2 }}">
-                        <span id="slice-z-value">{{ dimensions[2]//2 }}</span>
+                    <div class="controls-container">
+                        <div class="control-group">
+                            <div class="slider-container">
+                                <label class="slider-label">X轴切片:</label>
+                                <input type="range" id="slice-x" class="slider" min="0" max="{{ dimensions[0]-1 }}" value="{{ dimensions[0]//2 }}">
+                                <span id="slice-x-value">{{ dimensions[0]//2 }}</span>
+                            </div>
+                            
+                            <div class="slider-container">
+                                <label class="slider-label">Y轴切片:</label>
+                                <input type="range" id="slice-y" class="slider" min="0" max="{{ dimensions[1]-1 }}" value="{{ dimensions[1]//2 }}">
+                                <span id="slice-y-value">{{ dimensions[1]//2 }}</span>
+                            </div>
+                            
+                            <div class="slider-container">
+                                <label class="slider-label">Z轴切片:</label>
+                                <input type="range" id="slice-z" class="slider" min="0" max="{{ dimensions[2]-1 }}" value="{{ dimensions[2]//2 }}">
+                                <span id="slice-z-value">{{ dimensions[2]//2 }}</span>
+                            </div>
+                        </div>
                     </div>
                     
                     <div class="loading">更新中...</div>
