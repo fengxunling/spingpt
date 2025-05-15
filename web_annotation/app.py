@@ -38,9 +38,9 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
     
     # Generate slice images in three directions
     slices = [
-        ('axial', np.rot90(data[:, :, slice_z], 2), f"z={slice_z}"),
-        ('coronal', np.rot90(data[:, slice_y, :], 2), f"y={slice_y}"),
-        ('sagittal', np.rot90(data[slice_x, :, :], 2), f"x={slice_x}")
+        ('axial', np.fliplr(np.rot90(data[:, :, slice_z], 2)), f"z={slice_z}"),
+        ('coronal', np.fliplr(np.rot90(data[:, slice_y, :], 2)), f"y={slice_y}"),
+        ('sagittal', np.fliplr(np.rot90(data[slice_x, :, :], 2)), f"x={slice_x}")
     ]
     
     image_paths = []
@@ -70,7 +70,7 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
 
 @app.route('/update_slice', methods=['POST'])
 def update_slice():
-    """更新切片索引并返回新图像"""
+    """Update slice indices and return new images"""
     data = request.json
     filename = data.get('filename')
     slice_x = int(data.get('slice_x'))
@@ -79,9 +79,9 @@ def update_slice():
     
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(filepath):
-        return jsonify({'error': '文件不存在'})
+        return jsonify({'error': 'File does not exist'})
     
-    # 处理NIfTI文件并生成新图像
+    # Process NIfTI file and generate new images
     image_paths, slice_indices, _ = process_nifti(
         filepath, 
         app.config['IMAGES_FOLDER'],
@@ -97,7 +97,7 @@ def update_slice():
 
 @app.route('/process_prompt', methods=['POST'])
 def process_prompt():
-    """处理用户提交的prompt"""
+    """Process user submitted prompt"""
     data = request.json
     filename = data.get('filename')
     prompt = data.get('prompt')
@@ -105,69 +105,69 @@ def process_prompt():
     slice_y = int(data.get('slice_y'))
     slice_z = int(data.get('slice_z'))
     
-    # 加载NIfTI文件
+    # Load NIfTI file
     filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
     if not os.path.exists(filepath):
-        return jsonify({'error': '文件不存在'})
+        return jsonify({'error': 'File does not exist'})
     
-    # 获取当前切片的图像
+    # Get current slice images
     img = nib.load(filepath)
     data_array = img.get_fdata()
     
-    # 获取三个方向的切片
+    # Get slices in three directions
     slices = [
         ('axial', np.rot90(data_array[:, :, slice_z], 2)),
         ('coronal', np.rot90(data_array[:, slice_y, :], 2)),
         ('sagittal', np.rot90(data_array[slice_x, :, :], 2))
     ]
     
-    # 将图像转换为base64编码，以便发送给Ollama
+    # Convert images to base64 encoding for sending to Ollama
     encoded_images = []
     for name, slice_data in slices:
-        # 归一化数据用于显示
+        # Normalize data for display
         if slice_data.max() > 0:
             slice_data = (slice_data / slice_data.max()) * 255
         
-        # 创建图像
+        # Create image
         plt.figure(figsize=(10, 10))
         plt.imshow(slice_data, cmap='gray')
         plt.axis('off')
         
-        # 保存到内存缓冲区
+        # Save to memory buffer
         buffer = BytesIO()
         plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
         plt.close()
         
-        # 转换为base64
+        # Convert to base64
         buffer.seek(0)
         img_base64 = base64.b64encode(buffer.read()).decode('utf-8')
         encoded_images.append((name, img_base64))
     
-    # 调用Ollama API
+    # Call Ollama API
     try:
         import requests
         
-        # 构建提示词，结合用户输入的prompt和图像信息
+        # Build prompt combining user input and image information
         if not prompt:
-            prompt = "请描述这张医学影像中可见的解剖结构和可能的病理发现。"
+            prompt = "Please describe the visible anatomical structures and possible pathological findings in this medical image."
         
-        # 分析所有三个方向的切片
+        # Analyze all three directional slices
         results = []
         for view_name, img_base64 in encoded_images:
-            # 构建Ollama API请求
-            ollama_url = "http://localhost:11434/api/generate"  # 默认Ollama地址
+            # Build Ollama API request
+            ollama_url = "http://localhost:11434/api/generate"  # Default Ollama address
             
-            # 为每个视图构建特定的提示词
-            view_prompt = f"{prompt}\n这是一张{view_name}视图的医学影像。"
-            if view_name == "axial":
-                view_prompt += "（轴向切面，从头到脚的水平切面）"
-            elif view_name == "coronal":
-                view_prompt += "（冠状切面，从前到后的垂直切面）"
-            elif view_name == "sagittal":
-                view_prompt += "（矢状切面，从左到右的垂直切面）"
+            # Build specific prompt for each view
+            view_prompt = f"{prompt}\nThis is a {view_name} view medical image."
+            if view_name == "axial MRI image":
+                view_prompt += "(Axial plane, horizontal section from head to foot)"
+            elif view_name == "coronal MRI image":
+                view_prompt += "(Coronal plane, vertical section from front to back)"
+            elif view_name == "sagittal MRI image":
+                view_prompt += "(Sagittal plane, vertical section from left to right)"
             
             payload = {
-                "model": "rohithbojja/llava-med-v1.6:latest",  # 使用完整的模型名称
+                "model": "rohithbojja/llava-med-v1.6:latest",  # Use complete model name
                 "prompt": view_prompt,
                 "images": [img_base64],
                 "stream": False
@@ -176,16 +176,16 @@ def process_prompt():
             response = requests.post(ollama_url, json=payload)
             
             if response.status_code == 200:
-                view_result = response.json().get('response', '无法获取模型响应')
-                results.append(f"<h3>{view_name}视图分析</h3><p>{view_result}</p>")
+                view_result = response.json().get('response', 'Unable to get model response')
+                results.append(f"<h3>{view_name} View Analysis</h3><p>{view_result}</p>")
             else:
-                results.append(f"<h3>{view_name}视图分析</h3><p>Ollama API调用失败: {response.status_code} - {response.text}</p>")
+                results.append(f"<h3>{view_name} View Analysis</h3><p>Ollama API call failed: {response.status_code} - {response.text}</p>")
         
-        # 合并所有结果
+        # Combine all results
         result = "".join(results)
     
     except Exception as e:
-        result = f"处理过程中出错: {str(e)}\n\n请确保Ollama服务已启动，并安装了LLaVA模型。您可以使用以下命令安装模型：\n\nollama pull llava"
+        result = f"Error during processing: {str(e)}\n\nPlease ensure Ollama service is running and LLaVA model is installed. You can install the model using the command:\n\nollama pull llava"
     
     return jsonify({
         'result': result
@@ -195,25 +195,25 @@ def process_prompt():
 def index():
     if request.method == 'POST':
         if 'file' not in request.files:
-            return jsonify({'error': '没有文件部分'})
+            return jsonify({'error': 'No file part'})
         
         file = request.files['file']
         if file.filename == '':
-            return jsonify({'error': '没有选择文件'})
+            return jsonify({'error': 'No file selected'})
         
         if file and file.filename.endswith('.nii.gz'):
             filename = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
             file.save(filename)
             
-            # 处理NIfTI文件并生成图像
+            # Process NIfTI file and generate images
             image_paths, slice_indices, dimensions = process_nifti(filename, app.config['IMAGES_FOLDER'])
             
-            # 返回包含图像路径的HTML页面
+            # Return HTML page with image paths
             return render_template_string('''
             <!DOCTYPE html>
             <html>
             <head>
-                <title>医学影像查看</title>
+                <title>Medical Image Viewer</title>
                 <style>
                     body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
                     h1 { color: #333; }
@@ -241,33 +241,33 @@ def index():
                 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             </head>
             <body>
-                <h1>医学影像查看</h1>
+                <h1>Medical Image Viewer</h1>
                 <div class="container">
-                    <h2>文件: {{ filename }}</h2>
+                    <h2>File: {{ filename }}</h2>
                     
                     <div class="controls-container">
                         <div class="control-group">
                             <div class="slider-container">
-                                <label class="slider-label">X轴切片:</label>
+                                <label class="slider-label">X-axis slice:</label>
                                 <input type="range" id="slice-x" class="slider" min="0" max="{{ dimensions[0]-1 }}" value="{{ dimensions[0]//2 }}">
                                 <span id="slice-x-value">{{ dimensions[0]//2 }}</span>
                             </div>
                             
                             <div class="slider-container">
-                                <label class="slider-label">Y轴切片:</label>
+                                <label class="slider-label">Y-axis slice:</label>
                                 <input type="range" id="slice-y" class="slider" min="0" max="{{ dimensions[1]-1 }}" value="{{ dimensions[1]//2 }}">
                                 <span id="slice-y-value">{{ dimensions[1]//2 }}</span>
                             </div>
                             
                             <div class="slider-container">
-                                <label class="slider-label">Z轴切片:</label>
+                                <label class="slider-label">Z-axis slice:</label>
                                 <input type="range" id="slice-z" class="slider" min="0" max="{{ dimensions[2]-1 }}" value="{{ dimensions[2]//2 }}">
                                 <span id="slice-z-value">{{ dimensions[2]//2 }}</span>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="loading">更新中...</div>
+                    <div class="loading">Updating...</div>
                     
                     <div class="image-container" id="image-container">
                         <div class="image-section">
@@ -280,23 +280,23 @@ def index():
                             {% endfor %}
                         </div>
                         
-                        <!-- 新增的Prompt文本框，占比1/3 -->
+                        <!-- Prompt textbox taking 1/3 of space -->
                         <div class="prompt-section">
-                            <h3>输入Prompt</h3>
+                            <h3>Enter Prompt</h3>
                             <div class="prompt-box">
-                                <textarea id="prompt-text" placeholder="请在此输入您的prompt..."></textarea>
-                                <button id="submit-prompt">提交</button>
+                                <textarea id="prompt-text" placeholder="Enter your prompt here..."></textarea>
+                                <button id="submit-prompt">Submit</button>
                                 <div class="prompt-result" id="prompt-result">
-                                    <p>结果将显示在这里...</p>
+                                    <p>Results will be shown here...</p>
                                 </div>
                             </div>
                         </div>
                     </div>
-                    <a href="/" class="back-btn">返回上传页面</a>
+                    <a href="/" class="back-btn">Back to Upload Page</a>
                 </div>
                 
                 <script>
-                    // 防抖函数
+                    // Debounce function
                     function debounce(func, wait) {
                         let timeout;
                         return function() {
@@ -309,7 +309,7 @@ def index():
                         };
                     }
                     
-                    // 更新切片显示
+                    // Update slice display
                     const updateSlices = debounce(function() {
                         $('.loading').show();
                         
@@ -328,7 +328,7 @@ def index():
                                 slice_z: sliceZ
                             }),
                             success: function(response) {
-                                // 更新图像
+                                // Update images
                                 for (let i = 0; i < response.images.length; i++) {
                                     const imgPath = '/static/images/' + response.images[i] + '?t=' + new Date().getTime();
                                     $('#image-' + i).attr('src', imgPath);
@@ -337,13 +337,13 @@ def index():
                                 $('.loading').hide();
                             },
                             error: function() {
-                                alert('更新切片失败');
+                                alert('Failed to update slices');
                                 $('.loading').hide();
                             }
                         });
                     }, 100);
                     
-                    // 监听滑块变化
+                    // Listen for slider changes
                     $('#slice-x').on('input', function() {
                         $('#slice-x-value').text($(this).val());
                         updateSlices();
@@ -359,11 +359,11 @@ def index():
                         updateSlices();
                     });
                     
-                    // 添加提交prompt的功能
+                    // Add prompt submission functionality
                     $('#submit-prompt').on('click', function() {
                         const promptText = $('#prompt-text').val();
                         if (!promptText.trim()) {
-                            alert('请输入prompt内容');
+                            alert('Please enter prompt content');
                             return;
                         }
                         
@@ -386,7 +386,7 @@ def index():
                                 $('#prompt-result').html('<p>' + response.result + '</p>');
                             },
                             error: function() {
-                                alert('处理prompt失败');
+                                alert('Failed to process prompt');
                             }
                         });
                     });
@@ -395,13 +395,13 @@ def index():
             </html>
             ''', filename=file.filename, images=image_paths, slice_indices=slice_indices, dimensions=dimensions)
         else:
-            return jsonify({'error': '请上传.nii.gz格式的文件'})
+            return jsonify({'error': 'Please upload a .nii.gz format file'})
     
     return '''
     <!DOCTYPE html>
     <html>
     <head>
-        <title>医学影像上传</title>
+        <title>Medical Image Upload</title>
         <style>
             body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
             h1 { color: #333; }
@@ -413,16 +413,16 @@ def index():
         </style>
     </head>
     <body>
-        <h1>医学影像上传系统</h1>
+        <h1>Medical Image Upload System</h1>
         <div class="upload-container">
-            <p>请选择您要上传的医学影像文件</p>
+            <p>Please select the medical image file to upload</p>
             <form method="post" enctype="multipart/form-data">
                 <div class="file-input">
                     <input type="file" name="file" id="file" accept=".nii.gz">
                 </div>
-                <button type="submit" class="upload-btn">上传文件</button>
+                <button type="submit" class="upload-btn">Upload File</button>
             </form>
-            <p class="note">注意：仅支持.nii.gz格式的文件</p>
+            <p class="note">Note: Only .nii.gz format files are supported</p>
         </div>
     </body>
     </html>
