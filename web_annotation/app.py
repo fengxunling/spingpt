@@ -181,7 +181,11 @@ def process_prompt():
         
         # Use all collected view analysis results to call the model again for comprehensive analysis
         if all(result for _, result in view_results):
-            combined_prompt = f"""Based on the analysis of the following views, please provide a comprehensive diagnostic report:
+            combined_prompt = f"""Based on the analysis of the following views, please first distinguish if the image is T1 or T2 image.
+
+            Then distinguish if it is from cervical spine, thoracic spine, lumbar spine, sacral spine, or coccygeal spine.
+            
+            Then describe the structures and possible pathological findings in the spine MRI medical image.:
             
             Sagittal view analysis: {view_results[2][1]}
             
