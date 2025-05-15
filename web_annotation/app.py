@@ -38,9 +38,9 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
     
     # Generate slice images in three directions
     slices = [
-        ('axial', data[:, :, slice_z], f"z={slice_z}"),
-        ('coronal', data[:, slice_y, :], f"y={slice_y}"),
-        ('sagittal', data[slice_x, :, :], f"x={slice_x}")
+        ('axial', np.rot90(data[:, :, slice_z], 2), f"z={slice_z}"),
+        ('coronal', np.rot90(data[:, slice_y, :], 2), f"y={slice_y}"),
+        ('sagittal', np.rot90(data[slice_x, :, :], 2), f"x={slice_x}")
     ]
     
     image_paths = []
@@ -105,15 +105,87 @@ def process_prompt():
     slice_y = int(data.get('slice_y'))
     slice_z = int(data.get('slice_z'))
     
-    # 这里您可以根据需要实现prompt的处理逻辑
-    # 例如：分析图像、调用AI模型等
+    # 加载NIfTI文件
+    filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+    if not os.path.exists(filepath):
+        return jsonify({'error': '文件不存在'})
     
-    result = 'hello world'
+    # 获取当前切片的图像
+    img = nib.load(filepath)
+    data_array = img.get_fdata()
     
-    # 在实际应用中，您可能需要：
-    # 1. 调用AI模型处理prompt和图像
-    # 2. 生成标注或分析结果
-    # 3. 返回处理后的图像或文本结果
+    # 获取三个方向的切片
+    slices = [
+        ('axial', np.rot90(data_array[:, :, slice_z], 2)),
+        ('coronal', np.rot90(data_array[:, slice_y, :], 2)),
+        ('sagittal', np.rot90(data_array[slice_x, :, :], 2))
+    ]
+    
+    # 将图像转换为base64编码，以便发送给Ollama
+    encoded_images = []
+    for name, slice_data in slices:
+        # 归一化数据用于显示
+        if slice_data.max() > 0:
+            slice_data = (slice_data / slice_data.max()) * 255
+        
+        # 创建图像
+        plt.figure(figsize=(10, 10))
+        plt.imshow(slice_data, cmap='gray')
+        plt.axis('off')
+        
+        # 保存到内存缓冲区
+        buffer = BytesIO()
+        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
+        plt.close()
+        
+        # 转换为base64
+        buffer.seek(0)
+        img_base64 = base64.b64encode(buffer.read()).decode('utf-8')
+        encoded_images.append((name, img_base64))
+    
+    # 调用Ollama API
+    try:
+        import requests
+        
+        # 构建提示词，结合用户输入的prompt和图像信息
+        if not prompt:
+            prompt = "请描述这张医学影像中可见的解剖结构和可能的病理发现。"
+        
+        # 分析所有三个方向的切片
+        results = []
+        for view_name, img_base64 in encoded_images:
+            # 构建Ollama API请求
+            ollama_url = "http://localhost:11434/api/generate"  # 默认Ollama地址
+            
+            # 为每个视图构建特定的提示词
+            view_prompt = f"{prompt}\n这是一张{view_name}视图的医学影像。"
+            if view_name == "axial":
+                view_prompt += "（轴向切面，从头到脚的水平切面）"
+            elif view_name == "coronal":
+                view_prompt += "（冠状切面，从前到后的垂直切面）"
+            elif view_name == "sagittal":
+                view_prompt += "（矢状切面，从左到右的垂直切面）"
+            
+            payload = {
+                "model": "rohithbojja/llava-med-v1.6:latest",  # 使用完整的模型名称
+                "prompt": view_prompt,
+                "images": [img_base64],
+                "stream": False
+            }
+            
+            response = requests.post(ollama_url, json=payload)
+            
+            if response.status_code == 200:
+                view_result = response.json().get('response', '无法获取模型响应')
+                results.append(f"<h3>{view_name}视图分析</h3><p>{view_result}</p>")
+            else:
+                results.append(f"<h3>{view_name}视图分析</h3><p>Ollama API调用失败: {response.status_code} - {response.text}</p>")
+        
+        # 合并所有结果
+        result = "".join(results)
+    
+    except Exception as e:
+        result = f"处理过程中出错: {str(e)}\n\n请确保Ollama服务已启动，并安装了LLaVA模型。您可以使用以下命令安装模型：\n\nollama pull llava"
     
     return jsonify({
         'result': result
