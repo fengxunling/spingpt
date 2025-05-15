@@ -219,6 +219,17 @@ def process_prompt():
         'result': result
     })
 
+@app.route('/upload_audio', methods=['POST'])
+def upload_audio():
+    """接收前端上传的音频文件"""
+    if 'audio' not in request.files:
+        return jsonify({'error': '没有音频文件'}), 400
+    audio = request.files['audio']
+    filename = request.form.get('filename', 'unknown')
+    save_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_record.wav")
+    audio.save(save_path)
+    return jsonify({'success': True, 'message': '音频已保存'})
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -314,6 +325,11 @@ def index():
                             <div class="prompt-box">
                                 <textarea id="prompt-text" placeholder="Enter your prompt here..."></textarea>
                                 <button id="submit-prompt">Submit</button>
+                                <div style="margin-top:15px;">
+                                    <button id="record-btn">🎤 开始录音</button>
+                                    <button id="stop-btn" disabled>停止录音</button>
+                                    <audio id="audio-playback" controls style="display:none;margin-top:10px;"></audio>
+                                </div>
                                 <div class="prompt-result" id="prompt-result">
                                     <p>Results will be shown here...</p>
                                 </div>
@@ -417,6 +433,57 @@ def index():
                                 alert('Failed to process prompt');
                             }
                         });
+                    });
+
+                    let mediaRecorder;
+                    let audioChunks = [];
+
+                    $('#record-btn').on('click', function() {
+                        navigator.mediaDevices.getUserMedia({ audio: true })
+                            .then(stream => {
+                                mediaRecorder = new MediaRecorder(stream);
+                                mediaRecorder.start();
+                                audioChunks = [];
+                                mediaRecorder.ondataavailable = e => {
+                                    audioChunks.push(e.data);
+                                };
+                                mediaRecorder.onstop = e => {
+                                    const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                                    const audioUrl = URL.createObjectURL(audioBlob);
+                                    $('#audio-playback').attr('src', audioUrl).show();
+
+                                    // 上传音频到后端
+                                    const formData = new FormData();
+                                    formData.append('audio', audioBlob, 'record.wav');
+                                    formData.append('filename', '{{ filename }}');
+                                    $.ajax({
+                                        url: '/upload_audio',
+                                        type: 'POST',
+                                        data: formData,
+                                        processData: false,
+                                        contentType: false,
+                                        success: function(response) {
+                                            alert('音频上传成功');
+                                        },
+                                        error: function() {
+                                            alert('音频上传失败');
+                                        }
+                                    });
+                                };
+                                $('#record-btn').attr('disabled', true);
+                                $('#stop-btn').attr('disabled', false);
+                            })
+                            .catch(err => {
+                                alert('无法访问麦克风: ' + err);
+                            });
+                    });
+
+                    $('#stop-btn').on('click', function() {
+                        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                            mediaRecorder.stop();
+                            $('#record-btn').attr('disabled', false);
+                            $('#stop-btn').attr('disabled', true);
+                        }
                     });
                 </script>
             </body>
