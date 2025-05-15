@@ -8,7 +8,8 @@ import base64
 
 app = Flask(__name__)
 
-# 确保上传目录存在
+app = Flask(__name__)
+# Ensure upload directories exist
 UPLOAD_FOLDER = 'uploads'
 IMAGES_FOLDER = 'static/images'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -17,12 +18,12 @@ app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['IMAGES_FOLDER'] = IMAGES_FOLDER
 
 def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None):
-    """处理NIfTI文件并生成图像"""
-    # 加载NIfTI文件
+    """Process NIfTI file and generate images"""
+    # Load NIfTI file
     img = nib.load(filepath)
     data = img.get_fdata()
     
-    # 如果没有提供切片索引，则使用中间切片
+    # Use middle slice if no slice index is provided
     if slice_x is None:
         slice_x = data.shape[0] // 2
     if slice_y is None:
@@ -30,12 +31,12 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
     if slice_z is None:
         slice_z = data.shape[2] // 2
     
-    # 确保切片索引在有效范围内
+    # Ensure slice indices are within valid range
     slice_x = max(0, min(slice_x, data.shape[0] - 1))
     slice_y = max(0, min(slice_y, data.shape[1] - 1))
     slice_z = max(0, min(slice_z, data.shape[2] - 1))
     
-    # 生成三个方向的切片图像
+    # Generate slice images in three directions
     slices = [
         ('axial', data[:, :, slice_z], f"z={slice_z}"),
         ('coronal', data[:, slice_y, :], f"y={slice_y}"),
@@ -46,17 +47,17 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
     slice_indices = []
     
     for name, slice_data, slice_index in slices:
-        # 归一化数据以便显示
-        slice_data = slice_data.T  # 转置以获得正确的方向
+        # Normalize data for display
+        slice_data = slice_data.T  # Transpose for correct orientation
         if slice_data.max() > 0:
             slice_data = (slice_data / slice_data.max()) * 255
         
-        # 创建图像
+        # Create image
         plt.figure(figsize=(10, 10))
         plt.imshow(slice_data, cmap='gray')
         plt.axis('off')
         
-        # 保存图像
+        # Save image
         filename = f"{os.path.basename(filepath).split('.')[0]}_{name}.png"
         output_path = os.path.join(output_dir, filename)
         plt.savefig(output_path, bbox_inches='tight', pad_inches=0)
@@ -145,9 +146,11 @@ def index():
                     body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
                     h1 { color: #333; }
                     .container { margin: 30px auto; max-width: 1200px; padding: 20px; border: 1px solid #ddd; border-radius: 5px; }
-                    .image-container { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
-                    .image-box { flex: 1; margin: 0 10px; text-align: center; }
+                    .image-container { display: flex; justify-content: space-between; align-items: flex-start; margin-top: 20px; }
+                    .image-section { flex: 2; display: flex; flex-wrap: wrap; justify-content: space-between; }
+                    .image-box { width: 32%; margin-bottom: 15px; text-align: center; }
                     .image-box img { max-width: 100%; height: auto; border: 1px solid #ddd; }
+                    .prompt-section { flex: 1; margin-left: 20px; border-left: 1px solid #ddd; padding-left: 20px; text-align: left; }
                     .back-btn { background-color: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-top: 20px; text-decoration: none; display: inline-block; }
                     .back-btn:hover { background-color: #45a049; }
                     .slice-info { font-weight: bold; color: #555; margin-top: 5px; }
@@ -157,6 +160,11 @@ def index():
                     .loading { display: none; margin: 20px auto; }
                     .controls-container { display: flex; justify-content: space-around; flex-wrap: wrap; }
                     .control-group { margin: 10px; min-width: 350px; }
+                    .prompt-box { width: 100%; }
+                    #prompt-text { width: 100%; height: 150px; margin: 10px 0; padding: 8px; box-sizing: border-box; }
+                    #submit-prompt { background-color: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer; }
+                    #submit-prompt:hover { background-color: #45a049; }
+                    .prompt-result { margin-top: 15px; padding: 10px; background-color: #f9f9f9; border-radius: 4px; min-height: 100px; }
                 </style>
                 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
             </head>
@@ -190,21 +198,25 @@ def index():
                     <div class="loading">更新中...</div>
                     
                     <div class="image-container" id="image-container">
-                        {% for i in range(images|length) %}
-                        <div class="image-box">
-                            <h3>{{ images[i].split('_')[-1].split('.')[0] }}</h3>
-                            <div class="slice-info" id="slice-info-{{ i }}">{{ slice_indices[i] }}</div>
-                            <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}" id="image-{{ i }}">
+                        <div class="image-section">
+                            {% for i in range(images|length) %}
+                            <div class="image-box">
+                                <h3>{{ images[i].split('_')[-1].split('.')[0] }}</h3>
+                                <div class="slice-info" id="slice-info-{{ i }}">{{ slice_indices[i] }}</div>
+                                <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}" id="image-{{ i }}">
+                            </div>
+                            {% endfor %}
                         </div>
-                        {% endfor %}
                         
-                        <!-- 新增的Prompt文本框 -->
-                        <div class="prompt-box">
+                        <!-- 新增的Prompt文本框，占比1/3 -->
+                        <div class="prompt-section">
                             <h3>输入Prompt</h3>
-                            <textarea id="prompt-text" placeholder="请在此输入您的prompt..."></textarea>
-                            <button id="submit-prompt">提交</button>
-                            <div class="prompt-result" id="prompt-result">
-                                <p>结果将显示在这里...</p>
+                            <div class="prompt-box">
+                                <textarea id="prompt-text" placeholder="请在此输入您的prompt..."></textarea>
+                                <button id="submit-prompt">提交</button>
+                                <div class="prompt-result" id="prompt-result">
+                                    <p>结果将显示在这里...</p>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -275,6 +287,37 @@ def index():
                         updateSlices();
                     });
                     
+                    // 添加提交prompt的功能
+                    $('#submit-prompt').on('click', function() {
+                        const promptText = $('#prompt-text').val();
+                        if (!promptText.trim()) {
+                            alert('请输入prompt内容');
+                            return;
+                        }
+                        
+                        const sliceX = $('#slice-x').val();
+                        const sliceY = $('#slice-y').val();
+                        const sliceZ = $('#slice-z').val();
+                        
+                        $.ajax({
+                            url: '/process_prompt',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({
+                                filename: '{{ filename }}',
+                                prompt: promptText,
+                                slice_x: sliceX,
+                                slice_y: sliceY,
+                                slice_z: sliceZ
+                            }),
+                            success: function(response) {
+                                $('#prompt-result').html('<p>' + response.result + '</p>');
+                            },
+                            error: function() {
+                                alert('处理prompt失败');
+                            }
+                        });
+                    });
                 </script>
             </body>
             </html>
