@@ -230,6 +230,30 @@ def upload_audio():
     audio.save(save_path)
     return jsonify({'success': True, 'message': '音频已保存'})
 
+@app.route('/transcribe_audio', methods=['POST'])
+def transcribe_audio():
+    """音频转文字并保存"""
+    data = request.json
+    filename = data.get('filename')
+    if not filename:
+        return jsonify({'error': '缺少文件名'}), 400
+    audio_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_record.wav")
+    if not os.path.exists(audio_path):
+        return jsonify({'error': '音频文件不存在'}), 404
+
+    try:
+        import whisper
+        model = whisper.load_model("medium")
+        result = model.transcribe(audio_path, language="en")
+        transcript = result['text']
+        # 保存转录文本
+        transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_transcript.txt")
+        with open(transcript_path, 'w', encoding='utf-8') as f:
+            f.write(transcript)
+        return jsonify({'success': True, 'transcript': transcript})
+    except Exception as e:
+        return jsonify({'error': f'转录失败: {str(e)}'}), 500
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -328,7 +352,9 @@ def index():
                                 <div style="margin-top:15px;">
                                     <button id="record-btn">🎤 开始录音</button>
                                     <button id="stop-btn" disabled>停止录音</button>
+                                    <button id="transcribe-btn" disabled>转录</button>
                                     <audio id="audio-playback" controls style="display:none;margin-top:10px;"></audio>
+                                    <div id="transcript-result" style="margin-top:10px;color:#333;"></div>
                                 </div>
                                 <div class="prompt-result" id="prompt-result">
                                     <p>Results will be shown here...</p>
@@ -435,6 +461,8 @@ def index():
                         });
                     });
 
+                    let audioBlob = null;
+                    let filename = "{{ filename }}"; // 用于音频文件名
                     let mediaRecorder;
                     let audioChunks = [];
 
@@ -483,7 +511,30 @@ def index():
                             mediaRecorder.stop();
                             $('#record-btn').attr('disabled', false);
                             $('#stop-btn').attr('disabled', true);
+                            $('#transcribe-btn').prop('disabled', false); // 录音结束后允许转录
                         }
+                    });
+
+                    // 转录按钮事件
+                    $('#transcribe-btn').on('click', function() {
+                        $('#transcribe-btn').prop('disabled', true);
+                        $('#transcript-result').text('正在转录...');
+                        $.ajax({
+                            url: '/transcribe_audio',
+                            type: 'POST',
+                            contentType: 'application/json',
+                            data: JSON.stringify({ filename: filename }),
+                            success: function(response) {
+                                if (response.success) {
+                                    $('#transcript-result').text('转录结果：' + response.transcript);
+                                } else {
+                                    $('#transcript-result').text('转录失败：' + (response.error || '未知错误'));
+                                }
+                            },
+                            error: function() {
+                                $('#transcript-result').text('转录请求失败');
+                            }
+                        });
                     });
                 </script>
             </body>
