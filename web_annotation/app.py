@@ -38,9 +38,9 @@ def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None
     
     # Generate slice images in three directions
     slices = [
-        ('axial', np.fliplr(np.rot90(data[:, :, slice_z], 2)), f"z={slice_z}"),
-        ('coronal', np.fliplr(np.rot90(data[:, slice_y, :], 2)), f"y={slice_y}"),
-        ('sagittal', np.fliplr(np.rot90(data[slice_x, :, :], 2)), f"x={slice_x}")
+        ('axial', np.rot90(data[:, :, slice_z], 2), f"z={slice_z}"),
+        ('coronal', np.rot90(data[:, slice_y, :], 2), f"y={slice_y}"),
+        ('sagittal', np.rot90(data[slice_x, :, :], 2), f"x={slice_x}")
     ]
     
     image_paths = []
@@ -116,9 +116,9 @@ def process_prompt():
     
     # Get slices in three directions
     slices = [
-        ('axial', np.rot90(data_array[:, :, slice_z], 2)),
-        ('coronal', np.rot90(data_array[:, slice_y, :], 2)),
-        ('sagittal', np.rot90(data_array[slice_x, :, :], 2))
+        ('axial', data_array[:, :, slice_z]),
+        ('coronal', data_array[:, slice_y, :]),
+        ('sagittal', data_array[slice_x, :, :])
     ]
     
     # Convert images to base64 encoding for sending to Ollama
@@ -128,14 +128,12 @@ def process_prompt():
         if slice_data.max() > 0:
             slice_data = (slice_data / slice_data.max()) * 255
         
-        # Create image
-        plt.figure(figsize=(10, 10))
-        plt.imshow(slice_data, cmap='gray')
+        plt.figure(figsize=(20, 20), dpi=300)
+        plt.imshow(slice_data, cmap='gray', interpolation='none')
         plt.axis('off')
         
-        # Save to memory buffer
         buffer = BytesIO()
-        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0)
+        plt.savefig(buffer, format='png', bbox_inches='tight', pad_inches=0, dpi=300)
         plt.close()
         
         # Convert to base64
@@ -148,23 +146,21 @@ def process_prompt():
         import requests
         
         # Build prompt combining user input and image information
-        if not prompt:
-            prompt = "Please describe the visible anatomical structures and possible pathological findings in this medical image."
         
-        # Analyze all three directional slices
-        results = []
+        # Analyze three views separately but collect all results
+        view_results = []
         for view_name, img_base64 in encoded_images:
             # Build Ollama API request
             ollama_url = "http://localhost:11434/api/generate"  # Default Ollama address
             
             # Build specific prompt for each view
             view_prompt = f"{prompt}\nThis is a {view_name} view medical image."
-            if view_name == "axial MRI image":
-                view_prompt += "(Axial plane, horizontal section from head to foot)"
-            elif view_name == "coronal MRI image":
-                view_prompt += "(Coronal plane, vertical section from front to back)"
-            elif view_name == "sagittal MRI image":
-                view_prompt += "(Sagittal plane, vertical section from left to right)"
+            if view_name == "axial":
+                view_prompt += "axial MRI image: (Axial plane, horizontal section from head to foot)"
+            elif view_name == "coronal":
+                view_prompt += "coronal MRI image: (Coronal plane, vertical section from front to back)"
+            elif view_name == "sagittal":
+                view_prompt += "sagittal MRI image: (Sagittal plane, vertical section from left to right)"
             
             payload = {
                 "model": "rohithbojja/llava-med-v1.6:latest",  # Use complete model name
@@ -177,15 +173,50 @@ def process_prompt():
             
             if response.status_code == 200:
                 view_result = response.json().get('response', 'Unable to get model response')
-                results.append(f"<h3>{view_name} View Analysis</h3><p>{view_result}</p>")
+                view_results.append((view_name, view_result))
             else:
-                results.append(f"<h3>{view_name} View Analysis</h3><p>Ollama API call failed: {response.status_code} - {response.text}</p>")
+                view_results.append((view_name, f"Ollama API call failed: {response.status_code} - {response.text}"))
         
-        # Combine all results
-        result = "".join(results)
+        # Use all collected view analysis results to make a comprehensive analysis
+        if all(result for _, result in view_results):
+            combined_prompt = f"""Based on the following analyses of three orthogonal views of a spine MRI:
+
+                Axial Analysis (horizontal section, top-down view): {view_results[0][1]}
+
+                Coronal Analysis (frontal section, front-to-back view): {view_results[1][1]}
+
+                Sagittal Analysis (lateral section, side view): {view_results[2][1]}
+
+                Please provide a comprehensive interpretation of this spine MRI. First, identify the spinal region shown (cervical, thoracic, lumbar, sacral, or coccygeal). Then, describe any visible anatomical structures, abnormalities, or pathologies.
+
+                If the original prompt was asking for specific information rather than a general description, please focus your response on addressing: "{prompt}"
+
+                The sagittal view typically provides the most diagnostic information for spine imaging, so please prioritize findings from this view in your analysis.
+                """
+            
+            payload = {
+                "model": "rohithbojja/llava-med-v1.6:latest",  # Can also use text-only models like llama3
+                "prompt": combined_prompt,
+                "stream": False
+            }
+            
+            response = requests.post(ollama_url, json=payload)
+            
+            if response.status_code == 200:
+                result = f"<h3>Comprehensive Analysis Results</h3><p>{response.json().get('response', 'Unable to get model response')}</p>"
+            else:
+                # If comprehensive analysis fails, show individual view analyses
+                result = "<h3>Comprehensive Analysis Results</h3><p>Unable to generate comprehensive analysis. Here are the individual view analyses:</p>"
+                for view_name, view_result in view_results:
+                    result += f"<h4>{view_name} View</h4><p>{view_result}</p>"
+        else:
+            # If any view analysis fails, show available results
+            result = "<h3>Partial View Analysis Results</h3>"
+            for view_name, view_result in view_results:
+                result += f"<h4>{view_name} View</h4><p>{view_result}</p>"
     
     except Exception as e:
-        result = f"Error during processing: {str(e)}\n\nPlease ensure Ollama service is running and LLaVA model is installed. You can install the model using the command:\n\nollama pull llava"
+        result = f"Error during processing: {str(e)}\n\nPlease ensure Ollama service is running and LLaVA model is installed. You can install the model using:\n\nollama pull llava"
     
     return jsonify({
         'result': result
