@@ -146,8 +146,10 @@ def process_prompt():
         import requests
         
         # Build prompt combining user input and image information
+        if not prompt:
+            prompt = "Please describe the visible anatomical structures and possible pathological findings in this spine MRI medical image (it could be cervical spine, thoracic spine, lumbar spine, sacral spine, coccygeal spine)."
         
-        # Analyze three views separately but collect all results
+        # 分别分析三个视图，但收集所有结果
         view_results = []
         for view_name, img_base64 in encoded_images:
             # Build Ollama API request
@@ -177,22 +179,13 @@ def process_prompt():
             else:
                 view_results.append((view_name, f"Ollama API call failed: {response.status_code} - {response.text}"))
         
-        # Use all collected view analysis results to make a comprehensive analysis
+        # Use all collected view analysis results to call the model again for comprehensive analysis
         if all(result for _, result in view_results):
-            combined_prompt = f"""Based on the following analyses of three orthogonal views of a spine MRI:
-
-                Axial Analysis (horizontal section, top-down view): {view_results[0][1]}
-
-                Coronal Analysis (frontal section, front-to-back view): {view_results[1][1]}
-
-                Sagittal Analysis (lateral section, side view): {view_results[2][1]}
-
-                Please provide a comprehensive interpretation of this spine MRI. First, identify the spinal region shown (cervical, thoracic, lumbar, sacral, or coccygeal). Then, describe any visible anatomical structures, abnormalities, or pathologies.
-
-                If the original prompt was asking for specific information rather than a general description, please focus your response on addressing: "{prompt}"
-
-                The sagittal view typically provides the most diagnostic information for spine imaging, so please prioritize findings from this view in your analysis.
-                """
+            combined_prompt = f"""Based on the analysis of the following views, please provide a comprehensive diagnostic report:
+            
+            Sagittal view analysis: {view_results[2][1]}
+            
+            """
             
             payload = {
                 "model": "rohithbojja/llava-med-v1.6:latest",  # Can also use text-only models like llama3
@@ -205,19 +198,19 @@ def process_prompt():
             if response.status_code == 200:
                 result = f"<h3>Comprehensive Analysis Results</h3><p>{response.json().get('response', 'Unable to get model response')}</p>"
             else:
-                # If comprehensive analysis fails, show individual view analyses
+                # If comprehensive analysis fails, display results from individual views
                 result = "<h3>Comprehensive Analysis Results</h3><p>Unable to generate comprehensive analysis. Here are the individual view analyses:</p>"
                 for view_name, view_result in view_results:
                     result += f"<h4>{view_name} View</h4><p>{view_result}</p>"
         else:
-            # If any view analysis fails, show available results
+            # If any view analysis fails, display available results
             result = "<h3>Partial View Analysis Results</h3>"
             for view_name, view_result in view_results:
                 result += f"<h4>{view_name} View</h4><p>{view_result}</p>"
-    
+
     except Exception as e:
-        result = f"Error during processing: {str(e)}\n\nPlease ensure Ollama service is running and LLaVA model is installed. You can install the model using:\n\nollama pull llava"
-    
+        result = f"Error during processing: {str(e)}\n\nPlease ensure Ollama service is running and LLaVA model is installed. You can install the model using the command:\n\nollama pull llava"
+
     return jsonify({
         'result': result
     })
