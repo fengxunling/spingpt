@@ -94,6 +94,30 @@ def update_slice():
         'slice_indices': slice_indices
     })
 
+@app.route('/process_prompt', methods=['POST'])
+def process_prompt():
+    """处理用户提交的prompt"""
+    data = request.json
+    filename = data.get('filename')
+    prompt = data.get('prompt')
+    slice_x = int(data.get('slice_x'))
+    slice_y = int(data.get('slice_y'))
+    slice_z = int(data.get('slice_z'))
+    
+    # 这里您可以根据需要实现prompt的处理逻辑
+    # 例如：分析图像、调用AI模型等
+    
+    result = 'hello world'
+    
+    # 在实际应用中，您可能需要：
+    # 1. 调用AI模型处理prompt和图像
+    # 2. 生成标注或分析结果
+    # 3. 返回处理后的图像或文本结果
+    
+    return jsonify({
+        'result': result
+    })
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -173,6 +197,16 @@ def index():
                             <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}" id="image-{{ i }}">
                         </div>
                         {% endfor %}
+                        
+                        <!-- 新增的Prompt文本框 -->
+                        <div class="prompt-box">
+                            <h3>输入Prompt</h3>
+                            <textarea id="prompt-text" placeholder="请在此输入您的prompt..."></textarea>
+                            <button id="submit-prompt">提交</button>
+                            <div class="prompt-result" id="prompt-result">
+                                <p>结果将显示在这里...</p>
+                            </div>
+                        </div>
                     </div>
                     <a href="/" class="back-btn">返回上传页面</a>
                 </div>
@@ -223,23 +257,24 @@ def index():
                                 $('.loading').hide();
                             }
                         });
-                    }, 300);
+                    }, 100);
                     
                     // 监听滑块变化
                     $('#slice-x').on('input', function() {
                         $('#slice-x-value').text($(this).val());
+                        updateSlices();
                     });
                     
                     $('#slice-y').on('input', function() {
                         $('#slice-y-value').text($(this).val());
+                        updateSlices();
                     });
                     
                     $('#slice-z').on('input', function() {
                         $('#slice-z-value').text($(this).val());
+                        updateSlices();
                     });
                     
-                    // 滑块停止拖动后更新图像
-                    $('#slice-x, #slice-y, #slice-z').on('change', updateSlices);
                 </script>
             </body>
             </html>
