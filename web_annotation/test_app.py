@@ -254,12 +254,14 @@ def transcribe_audio():
     """Transcribe the uploaded audio file"""
     data = request.json
     filename = data.get('filename')
+    filename = filename[:-3]+'_recording.wav'
     
     if not filename:
         return jsonify({'success': False, 'error': 'No filename provided'})
     
     # 直接使用提供的完整文件名
     audio_path = os.path.join('static', 'audio', filename)
+    print(f'audio_path: {audio_path}')
     
     if not os.path.exists(audio_path):
         return jsonify({'success': False, 'error': 'Audio file not found'})

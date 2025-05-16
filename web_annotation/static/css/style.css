@@ -530,10 +530,9 @@ h1 {
     padding: 10px;
     border-radius: 4px;
     margin-top: 10px;
-    color: #cbd5e0;
+    color: #ffffff;
 }
 
-/* 添加医疗标志和专业元素 */
 .medical-header {
     display: flex;
     align-items: center;
