@@ -30,15 +30,18 @@ const updateSlices = debounce(function() {
             slice_z: sliceZ
         }),
         success: function(response) {
-            // Update images
-            for (let i = 0; i < response.images.length; i++) {
-                const imgPath = '/static/images/' + response.images[i] + '?t=' + new Date().getTime();
-                $('#image-' + i).attr('src', imgPath);
-                $('#slice-info-' + i).text(response.slice_indices[i]);
-            }
+            // Update images - 只更新轴状面和矢状面视图
+            // 轴状面视图 (axial)
+            const axialImgPath = '/static/images/' + response.images[0] + '?t=' + new Date().getTime();
+            $('#image-0').attr('src', axialImgPath);
+            $('#slice-info-0').text(response.slice_indices[0]);
             
-            // 更新矢状面视图
+            // 矢状面视图 (sagittal)
             const sagittalImgPath = '/static/images/' + response.images[2] + '?t=' + new Date().getTime();
+            $('#image-1').attr('src', sagittalImgPath);
+            $('#slice-info-1').text(response.slice_indices[2]);
+            
+            // 更新单独的矢状面视图
             $('#sagittal-image').attr('src', sagittalImgPath);
             $('#sagittal-slice-info').text(response.slice_indices[2]);
             

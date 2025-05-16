@@ -94,10 +94,13 @@ def update_slice():
         slice_z=slice_z
     )
     
+    # 仍然返回所有图像路径，前端会选择性使用
     return jsonify({
         'images': image_paths,
         'slice_indices': slice_indices
     })
+
+
 
 @app.route('/process_prompt', methods=['POST'])
 def process_prompt():
@@ -416,6 +419,7 @@ def get_annotations():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
 
+# 修改首页路由，只显示两个视图
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
@@ -433,7 +437,7 @@ def index():
             # Process NIfTI file and generate images
             image_paths, slice_indices, dimensions = process_nifti(filename, app.config['IMAGES_FOLDER'])
             
-            # Return HTML page with image paths
+            # 返回模板时仍然传递所有图像，但前端会选择性显示
             return render_template('viewer.html', 
                                   filename=file.filename, 
                                   images=image_paths, 
