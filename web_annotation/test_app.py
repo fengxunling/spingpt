@@ -237,8 +237,9 @@ def upload_audio():
     audio_dir = os.path.join('static', 'audio')
     os.makedirs(audio_dir, exist_ok=True)
     
-    # Save the audio file
-    audio_filename = f"{os.path.splitext(filename)[0]}_recording.wav"
+    # 添加时间戳到文件名中
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    audio_filename = f"{os.path.splitext(filename)[0]}_recording_{timestamp}.wav"
     audio_path = os.path.join(audio_dir, audio_filename)
     audio_file.save(audio_path)
     
@@ -254,17 +255,23 @@ def transcribe_audio():
     if not filename:
         return jsonify({'success': False, 'error': 'No filename provided'})
     
-    # Construct audio file path
-    audio_filename = f"{os.path.splitext(filename)[0]}_recording.wav"
-    audio_path = os.path.join('static', 'audio', audio_filename)
+    # 直接使用提供的完整文件名
+    audio_path = os.path.join('static', 'audio', filename)
     
     if not os.path.exists(audio_path):
         return jsonify({'success': False, 'error': 'Audio file not found'})
     
     try:
-        # 这里可以集成实际的转录服务，如Whisper API
-        # 目前返回一个模拟结果
-        transcript = "这是一个模拟的转录结果。实际应用中，您需要集成语音识别API。"
+        # 使用Whisper模型进行音频转录
+        import whisper
+        model = whisper.load_model("medium")
+        result = model.transcribe(audio_path, language="en")
+        transcript = result['text']
+        
+        # 保存转录文本
+        transcript_path = os.path.join('static', 'audio', f"{os.path.splitext(filename)[0]}_transcript.txt")
+        with open(transcript_path, 'w', encoding='utf-8') as f:
+            f.write(transcript)
         
         return jsonify({
             'success': True,
