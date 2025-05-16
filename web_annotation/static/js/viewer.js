@@ -120,7 +120,7 @@ $('#record-btn').on('click', function() {
                 const audioUrl = URL.createObjectURL(audioBlob);
                 $('#audio-playback').attr('src', audioUrl).show();
 
-                // 上传音频到后端
+                // Upload audio to backend
                 const formData = new FormData();
                 formData.append('audio', audioBlob, 'record.wav');
                 formData.append('filename', filename);
@@ -131,10 +131,10 @@ $('#record-btn').on('click', function() {
                     processData: false,
                     contentType: false,
                     success: function(response) {
-                        alert('音频上传成功');
+                        alert('Audio upload successful');
                     },
                     error: function() {
-                        alert('音频上传失败');
+                        alert('Audio upload failed');
                     }
                 });
             };
@@ -142,7 +142,7 @@ $('#record-btn').on('click', function() {
             $('#stop-btn').attr('disabled', false);
         })
         .catch(err => {
-            alert('无法访问麦克风: ' + err);
+            alert('Cannot access microphone: ' + err);
         });
 });
 
@@ -151,14 +151,14 @@ $('#stop-btn').on('click', function() {
         mediaRecorder.stop();
         $('#record-btn').attr('disabled', false);
         $('#stop-btn').attr('disabled', true);
-        $('#transcribe-btn').prop('disabled', false); // 录音结束后允许转录
+        $('#transcribe-btn').prop('disabled', false); // Enable transcription after recording ends
     }
 });
 
-// 转录按钮事件
+// Transcribe button event
 $('#transcribe-btn').on('click', function() {
     $('#transcribe-btn').prop('disabled', true);
-    $('#transcript-result').text('正在转录...');
+    $('#transcript-result').text('Transcribing...');
     $.ajax({
         url: '/transcribe_audio',
         type: 'POST',
@@ -166,29 +166,29 @@ $('#transcribe-btn').on('click', function() {
         data: JSON.stringify({ filename: filename }),
         success: function(response) {
             if (response.success) {
-                $('#transcript-result').text('转录结果：' + response.transcript);
+                $('#transcript-result').text('Transcription result: ' + response.transcript);
             } else {
-                $('#transcript-result').text('转录失败：' + (response.error || '未知错误'));
+                $('#transcript-result').text('Transcription failed: ' + (response.error || 'Unknown error'));
             }
         },
         error: function() {
-            $('#transcript-result').text('转录请求失败');
+            $('#transcript-result').text('Transcription request failed');
         }
     });
 });
 
-// 获取文件名
+// Get filename
 const filename = document.querySelector('h2').textContent.replace('File: ', '');
-const currentFilename = filename; 
+const currentFilename = filename;
 
-// 矢状面视图缩放功能
+// Sagittal view zoom functionality
 $(document).ready(function() {
     const sagittalImage = document.getElementById('sagittal-image');
     let scale = 1;
     let isDragging = false;
     let startX, startY, translateX = 0, translateY = 0;
     
-    // 缩放功能
+    // Zoom functionality
     $('#zoom-in').on('click', function() {
         scale *= 1.2;
         updateTransform();
@@ -211,7 +211,7 @@ $(document).ready(function() {
         sagittalImage.style.transform = `translate(${translateX}px, ${translateY}px) scale(${scale})`;
     }
     
-    // 拖动功能
+    // Drag functionality
     sagittalImage.addEventListener('mousedown', function(e) {
         isDragging = true;
         startX = e.clientX - translateX;
@@ -231,7 +231,7 @@ $(document).ready(function() {
         sagittalImage.style.cursor = 'move';
     });
     
-    // 鼠标滚轮缩放
+    // Mouse wheel zoom
     document.getElementById('sagittal-view').addEventListener('wheel', function(e) {
         e.preventDefault();
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
@@ -240,43 +240,43 @@ $(document).ready(function() {
         updateTransform();
     });
     
-    // 初始化
+    // Initialize
     sagittalImage.style.cursor = 'move';
 });
 
-// 在适当的位置添加以下代码
+// Add the following code at the appropriate location
 
-// 截图功能
+// Screenshot functionality
 function captureScreenshot() {
     const sagittalView = document.getElementById('sagittal-view');
     const sagittalImage = sagittalView.querySelector('img');
     
-    // 创建一个新的canvas元素
+    // Create a new canvas element
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     
-    // 设置canvas大小为当前视图大小
+    // Set canvas size to current view size
     canvas.width = sagittalView.clientWidth;
     canvas.height = sagittalView.clientHeight;
     
-    // 绘制当前视图到canvas
+    // Draw current view to canvas
     ctx.fillStyle = '#000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    // 获取图像的当前变换
+    // Get current image transform
     const transform = sagittalImage.style.transform;
     
-    // 临时应用变换到canvas上下文
+    // Temporarily apply transform to canvas context
     ctx.save();
     
-    // 计算中心点
+    // Calculate center point
     const centerX = canvas.width / 2;
     const centerY = canvas.height / 2;
     
-    // 应用当前的缩放和平移
+    // Apply current scale and translation
     ctx.translate(centerX, centerY);
     
-    // 从transform字符串中提取缩放和平移值
+    // Extract scale and translation values from transform string
     let scale = 1;
     let translateX = 0;
     let translateY = 0;
@@ -297,20 +297,20 @@ function captureScreenshot() {
     ctx.scale(scale, scale);
     ctx.translate(translateX / scale, translateY / scale);
     
-    // 绘制图像
+    // Draw image
     ctx.drawImage(sagittalImage, -sagittalImage.width / 2, -sagittalImage.height / 2);
     
-    // 恢复上下文
+    // Restore context
     ctx.restore();
     
-    // 将canvas转换为图像数据
+    // Convert canvas to image data
     const imageData = canvas.toDataURL('image/png');
     
-    // 发送到服务器保存
+    // Send to server for saving
     saveScreenshot(imageData);
 }
 
-// 保存截图到服务器
+// Save screenshot to server
 function saveScreenshot(imageData) {
     fetch('/save_screenshot', {
         method: 'POST',
@@ -319,7 +319,7 @@ function saveScreenshot(imageData) {
         },
         body: JSON.stringify({
             image: imageData,
-            filename: currentFilename, // 使用正确的变量名
+            filename: currentFilename, // Use correct variable name
             view_type: 'sagittal'
         })
     })
@@ -327,15 +327,15 @@ function saveScreenshot(imageData) {
     .then(data => {
         if (data.success) {
             showScreenshotSaved(data.path);
-            // 更新截图列表
+            // Update screenshot list
             loadSavedScreenshots();
         } else {
-            alert('截图保存失败: ' + data.error);
+            alert('Failed to save screenshot: ' + data.error);
         }
     })
     .catch(error => {
-        console.error('截图保存错误:', error);
-        alert('截图保存出错，请查看控制台');
+        console.error('Error saving screenshot:', error);
+        alert('Error saving screenshot, please check console');
     });
 }
 
@@ -344,73 +344,73 @@ function loadSavedScreenshots() {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // 可以在这里更新UI显示已保存的截图
-                console.log('已加载截图列表:', data.screenshots);
+                // Update UI to show saved screenshots here
+                console.log('Loaded screenshot list:', data.screenshots);
             }
         })
         .catch(error => {
-            console.error('加载截图列表错误:', error);
+            console.error('Error loading screenshot list:', error);
         });
 }
 
-// 显示截图已保存的提示
+// Show screenshot saved notification
 function showScreenshotSaved(imagePath) {
     const notification = document.createElement('div');
     notification.className = 'screenshot-notification';
     notification.innerHTML = `
-        <p>截图已保存!</p>
+        <p>Screenshot saved!</p>
         <img src="${imagePath}" alt="Saved Screenshot" width="150">
-        <button id="add-audio-btn" data-screenshot="${imagePath.split('/').pop()}">添加音频注释</button>
+        <button id="add-audio-btn" data-screenshot="${imagePath.split('/').pop()}">Add Audio Annotation</button>
     `;
     
     document.body.appendChild(notification);
     
-    // 添加事件监听器
+    // Add event listener
     notification.querySelector('#add-audio-btn').addEventListener('click', function() {
         const screenshotFilename = this.getAttribute('data-screenshot');
         showAudioAnnotationDialog(screenshotFilename);
         notification.remove();
     });
     
-    // 5秒后自动关闭
+    // Auto close after 5 seconds
     setTimeout(() => {
         notification.remove();
     }, 5000);
 }
 
-// 显示音频注释对话框
+// Display audio annotation dialog
 function showAudioAnnotationDialog(screenshotFilename) {
-    // 创建对话框
+    // Create dialog
     const dialog = document.createElement('div');
     dialog.className = 'audio-annotation-dialog';
     dialog.innerHTML = `
-        <h3>为截图添加音频注释</h3>
+        <h3>Add Audio Annotation to Screenshot</h3>
         <img src="/static/screenshots/${screenshotFilename}" alt="Screenshot" width="200">
         <div class="audio-controls">
-            <button id="start-recording">开始录音</button>
-            <button id="stop-recording" disabled>停止录音</button>
+            <button id="start-recording">Start Recording</button>
+            <button id="stop-recording" disabled>Stop Recording</button>
             <div id="recording-status"></div>
         </div>
         <div class="audio-playback" style="display:none">
             <audio id="audio-playback" controls></audio>
         </div>
         <div class="annotation-text">
-            <textarea id="annotation-text" placeholder="添加文字注释（可选）"></textarea>
+            <textarea id="annotation-text" placeholder="Add text annotation (optional)"></textarea>
         </div>
         <div class="dialog-buttons">
-            <button id="save-annotation">保存注释</button>
-            <button id="cancel-annotation">取消</button>
+            <button id="save-annotation">Save Annotation</button>
+            <button id="cancel-annotation">Cancel</button>
         </div>
     `;
     
     document.body.appendChild(dialog);
     
-    // 录音相关变量
+    // Recording related variables
     let mediaRecorder;
     let audioChunks = [];
     let audioBlob;
     
-    // 添加事件监听器
+    // Add event listeners
     const startRecordingBtn = dialog.querySelector('#start-recording');
     const stopRecordingBtn = dialog.querySelector('#stop-recording');
     const recordingStatus = dialog.querySelector('#recording-status');
@@ -419,7 +419,7 @@ function showAudioAnnotationDialog(screenshotFilename) {
     const saveAnnotationBtn = dialog.querySelector('#save-annotation');
     const cancelAnnotationBtn = dialog.querySelector('#cancel-annotation');
     
-    // 开始录音
+    // Start recording
     startRecordingBtn.addEventListener('click', function() {
         navigator.mediaDevices.getUserMedia({ audio: true })
             .then(stream => {
@@ -435,21 +435,21 @@ function showAudioAnnotationDialog(screenshotFilename) {
                     const audioUrl = URL.createObjectURL(audioBlob);
                     audioPlayer.src = audioUrl;
                     audioPlayback.style.display = 'block';
-                    recordingStatus.textContent = '录音完成';
+                    recordingStatus.textContent = 'Recording completed';
                 });
                 
                 mediaRecorder.start();
                 startRecordingBtn.disabled = true;
                 stopRecordingBtn.disabled = false;
-                recordingStatus.textContent = '正在录音...';
+                recordingStatus.textContent = 'Recording...';
             })
             .catch(error => {
-                console.error('获取麦克风失败:', error);
-                recordingStatus.textContent = '无法访问麦克风';
+                console.error('Failed to access microphone:', error);
+                recordingStatus.textContent = 'Cannot access microphone';
             });
     });
     
-    // 停止录音
+    // Stop recording
     stopRecordingBtn.addEventListener('click', function() {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
             mediaRecorder.stop();
@@ -459,19 +459,19 @@ function showAudioAnnotationDialog(screenshotFilename) {
         }
     });
     
-    // 保存注释
+    // Save annotation
     saveAnnotationBtn.addEventListener('click', function() {
         if (!audioBlob) {
-            alert('请先录制音频');
+            alert('Please record audio first');
             return;
         }
         
-        // 创建FormData对象上传音频
+        // Create FormData object to upload audio
         const formData = new FormData();
         formData.append('audio', audioBlob, 'recording.wav');
         formData.append('filename', currentFilename);
         
-        // 上传音频文件
+        // Upload audio file
         fetch('/upload_audio', {
             method: 'POST',
             body: formData
@@ -479,7 +479,7 @@ function showAudioAnnotationDialog(screenshotFilename) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                // 关联音频与截图
+                // Associate audio with screenshot
                 const annotationText = dialog.querySelector('#annotation-text').value;
                 
                 fetch('/associate_audio_with_image', {
@@ -496,31 +496,31 @@ function showAudioAnnotationDialog(screenshotFilename) {
                 .then(response => response.json())
                 .then(result => {
                     if (result.success) {
-                        alert('音频注释已保存');
+                        alert('Audio annotation saved');
                         dialog.remove();
-                        // 更新注释列表
+                        // Update annotations list
                         loadAnnotations();
                     } else {
-                        alert('保存注释关联失败: ' + result.error);
+                        alert('Failed to save annotation association: ' + result.error);
                     }
                 });
             } else {
-                alert('上传音频失败: ' + data.error);
+                alert('Failed to upload audio: ' + data.error);
             }
         })
         .catch(error => {
-            console.error('上传音频错误:', error);
-            alert('上传音频出错，请查看控制台');
+            console.error('Error uploading audio:', error);
+            alert('Error uploading audio, please check console');
         });
     });
     
-    // 取消
+    // Cancel
     cancelAnnotationBtn.addEventListener('click', function() {
         dialog.remove();
     });
 }
 
-// 加载已保存的注释
+// Load saved annotations
 function loadAnnotations() {
     fetch(`/get_annotations?filename=${encodeURIComponent(currentFilename)}`)
         .then(response => response.json())
@@ -530,19 +530,19 @@ function loadAnnotations() {
             }
         })
         .catch(error => {
-            console.error('加载注释错误:', error);
+            console.error('Error loading annotations:', error);
         });
 }
 
-// 显示注释列表
+// Display annotations list
 function displayAnnotations(annotations) {
     const annotationsContainer = document.getElementById('annotations-container');
     if (!annotationsContainer) {
-        // 创建注释容器
+        // Create annotations container
         const container = document.createElement('div');
         container.id = 'annotations-container';
         container.className = 'annotations-container';
-        container.innerHTML = '<h3>已保存的注释</h3><div class="annotations-list"></div>';
+        container.innerHTML = '<h3>Saved Annotations</h3><div class="annotations-list"></div>';
         document.querySelector('.viewer-container').appendChild(container);
         annotationsContainer = container;
     }
@@ -551,7 +551,7 @@ function displayAnnotations(annotations) {
     annotationsList.innerHTML = '';
     
     if (annotations.length === 0) {
-        annotationsList.innerHTML = '<p>暂无注释</p>';
+        annotationsList.innerHTML = '<p>No annotations yet</p>';
         return;
     }
     
@@ -566,7 +566,7 @@ function displayAnnotations(annotations) {
                 <div class="annotation-audio">
                     <audio controls src="/static/audio/${annotation.audio}"></audio>
                 </div>
-                <div class="annotation-text">${annotation.text || '无文字注释'}</div>
+                <div class="annotation-text">${annotation.text || 'No text annotation'}</div>
                 <div class="annotation-timestamp">${new Date(annotation.timestamp).toLocaleString()}</div>
             </div>
         `;
@@ -574,23 +574,23 @@ function displayAnnotations(annotations) {
     });
 }
 
-// 在页面加载完成后添加截图按钮
+// Add screenshot button after page loads
 document.addEventListener('DOMContentLoaded', function() {
-    // 添加截图按钮到矢状面视图
+    // Add screenshot button to sagittal view
     const sagittalControls = document.createElement('div');
     sagittalControls.className = 'sagittal-controls';
     sagittalControls.innerHTML = `
-        <button id="capture-screenshot" title="截图">📷 截图</button>
+        <button id="capture-screenshot" title="Screenshot">📷 Screenshot</button>
     `;
     
     const sagittalView = document.getElementById('sagittal-view');
     if (sagittalView) {
         sagittalView.appendChild(sagittalControls);
         
-        // 添加事件监听器
+        // Add event listener
         document.getElementById('capture-screenshot').addEventListener('click', captureScreenshot);
     }
     
-    // 加载已保存的注释
+    // Load saved annotations
     loadAnnotations();
 });
