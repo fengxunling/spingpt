@@ -34,6 +34,22 @@
         
         <div class="loading">Updating...</div>
         
+        <!-- 添加单独的矢状面视图窗口 -->
+        <div class="sagittal-container">
+            <h3>Sagittal View</h3>
+            <div class="zoom-controls">
+                <button id="zoom-in">+</button>
+                <button id="zoom-out">-</button>
+                <button id="reset-zoom">Reset</button>
+            </div>
+            <div class="sagittal-view-wrapper">
+                <div class="sagittal-view" id="sagittal-view">
+                    <div class="slice-info" id="sagittal-slice-info">{{ slice_indices[2] }}</div>
+                    <img src="{{ url_for('static', filename='images/' + images[2]) }}" alt="{{ images[2] }}" id="sagittal-image">
+                </div>
+            </div>
+        </div>
+        
         <div class="image-container" id="image-container">
             <div class="image-section">
                 {% for i in range(images|length) %}

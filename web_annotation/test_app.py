@@ -5,16 +5,21 @@ import matplotlib.pyplot as plt
 import numpy as np
 from io import BytesIO
 import base64
+import re
+from datetime import datetime
 
 app = Flask(__name__)
 
 # Ensure upload directories exist
 UPLOAD_FOLDER = 'uploads'
 IMAGES_FOLDER = 'static/images'
+SCREENSHOTS_FOLDER = 'static/screenshots'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(IMAGES_FOLDER, exist_ok=True)
+os.makedirs(SCREENSHOTS_FOLDER, exist_ok=True)
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['IMAGES_FOLDER'] = IMAGES_FOLDER
+app.config['SCREENSHOTS_FOLDER'] = SCREENSHOTS_FOLDER
 
 def process_nifti(filepath, output_dir, slice_x=None, slice_y=None, slice_z=None):
     """Process NIfTI file and generate images"""
@@ -218,48 +223,162 @@ def process_prompt():
         'result': result
     })
 
+# 添加音频上传处理路由
 @app.route('/upload_audio', methods=['POST'])
 def upload_audio():
-    """Process uploaded audio file"""
+    """Handle audio upload from the browser"""
     if 'audio' not in request.files:
-        return jsonify({'error': 'No audio file'})
+        return jsonify({'error': 'No audio file part'})
     
     audio_file = request.files['audio']
-    filename = request.form.get('filename')
+    filename = request.form.get('filename', 'unknown')
     
-    if not filename:
-        return jsonify({'error': 'No filename provided'})
-    
-    # Create audio directory
-    audio_dir = os.path.join(app.config['UPLOAD_FOLDER'], 'audio')
+    # Create audio directory if it doesn't exist
+    audio_dir = os.path.join('static', 'audio')
     os.makedirs(audio_dir, exist_ok=True)
     
-    # Save audio file
-    audio_path = os.path.join(audio_dir, f"{os.path.splitext(filename)[0]}_audio.wav")
+    # Save the audio file
+    audio_filename = f"{os.path.splitext(filename)[0]}_recording.wav"
+    audio_path = os.path.join(audio_dir, audio_filename)
     audio_file.save(audio_path)
     
-    return jsonify({'success': True, 'path': audio_path})
+    return jsonify({'success': True, 'filename': audio_filename})
 
+# 添加音频转录路由
 @app.route('/transcribe_audio', methods=['POST'])
 def transcribe_audio():
-    """Transcribe audio file"""
+    """Transcribe the uploaded audio file"""
     data = request.json
     filename = data.get('filename')
     
     if not filename:
         return jsonify({'success': False, 'error': 'No filename provided'})
     
-    audio_path = os.path.join(app.config['UPLOAD_FOLDER'], 'audio', f"{os.path.splitext(filename)[0]}_audio.wav")
+    # Construct audio file path
+    audio_filename = f"{os.path.splitext(filename)[0]}_recording.wav"
+    audio_path = os.path.join('static', 'audio', audio_filename)
     
     if not os.path.exists(audio_path):
-        return jsonify({'success': False, 'error': 'Audio file does not exist'})
+        return jsonify({'success': False, 'error': 'Audio file not found'})
     
     try:
-        # Should integrate actual speech-to-text service here
-        # Currently just returns a mock result
+        # 这里可以集成实际的转录服务，如Whisper API
+        # 目前返回一个模拟结果
+        transcript = "这是一个模拟的转录结果。实际应用中，您需要集成语音识别API。"
+        
         return jsonify({
             'success': True,
-            'transcript': 'This is a mock transcription result. In actual application, you need to integrate a speech recognition service.'
+            'transcript': transcript
+        })
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
+
+@app.route('/save_screenshot', methods=['POST'])
+def save_screenshot():
+    """Save a screenshot of the sagittal view"""
+    if 'image' not in request.json:
+        return jsonify({'success': False, 'error': 'No image data provided'})
+    
+    image_data = request.json.get('image')
+    filename = request.json.get('filename', 'unknown')
+    view_type = request.json.get('view_type', 'sagittal')
+    
+    # 从Base64数据中提取图像数据
+    if image_data.startswith('data:image'):
+        # 移除data URL前缀
+        image_data = re.sub('^data:image/.+;base64,', '', image_data)
+    
+    # 生成时间戳文件名
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    screenshot_filename = f"{os.path.splitext(filename)[0]}_{view_type}_{timestamp}.png"
+    screenshot_path = os.path.join(app.config['SCREENSHOTS_FOLDER'], screenshot_filename)
+    
+    # 保存图像
+    try:
+        with open(screenshot_path, "wb") as f:
+            f.write(base64.b64decode(image_data))
+        
+        return jsonify({
+            'success': True, 
+            'filename': screenshot_filename,
+            'path': os.path.join('static', 'screenshots', screenshot_filename)
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+# 添加图像音频注释关联路由
+@app.route('/associate_audio_with_image', methods=['POST'])
+def associate_audio_with_image():
+    """Associate an audio annotation with a screenshot"""
+    data = request.json
+    screenshot_filename = data.get('screenshot_filename')
+    audio_filename = data.get('audio_filename')
+    annotation_text = data.get('annotation_text', '')
+    
+    if not screenshot_filename or not audio_filename:
+        return jsonify({'success': False, 'error': 'Missing required filenames'})
+    
+    # 创建注释目录（如果不存在）
+    annotations_dir = os.path.join('static', 'annotations')
+    os.makedirs(annotations_dir, exist_ok=True)
+    
+    # 生成唯一的注释ID
+    annotation_id = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    # 创建注释记录
+    annotation = {
+        'id': annotation_id,
+        'screenshot': screenshot_filename,
+        'audio': audio_filename,
+        'text': annotation_text,
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # 保存注释记录到JSON文件
+    annotation_file = os.path.join(annotations_dir, f"annotation_{annotation_id}.json")
+    try:
+        import json
+        with open(annotation_file, 'w', encoding='utf-8') as f:
+            json.dump(annotation, f, ensure_ascii=False, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'annotation_id': annotation_id,
+            'annotation_file': annotation_file
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/get_annotations', methods=['GET'])
+def get_annotations():
+    """Get all annotations for a specific file"""
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({'success': False, 'error': 'No filename provided'})
+    
+    annotations_dir = os.path.join('static', 'annotations')
+    if not os.path.exists(annotations_dir):
+        return jsonify({'success': True, 'annotations': []})
+    
+    try:
+        import json
+        import glob
+        
+        annotations = []
+        annotation_files = glob.glob(os.path.join(annotations_dir, "annotation_*.json"))
+        
+        for annotation_file in annotation_files:
+            with open(annotation_file, 'r', encoding='utf-8') as f:
+                annotation = json.load(f)
+                if filename in annotation['screenshot']:
+                    annotations.append(annotation)
+        
+        return jsonify({
+            'success': True,
+            'annotations': annotations
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
