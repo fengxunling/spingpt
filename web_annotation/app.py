@@ -480,7 +480,7 @@ def index():
                                     const audioUrl = URL.createObjectURL(audioBlob);
                                     $('#audio-playback').attr('src', audioUrl).show();
 
-                                    // 上传音频到后端
+                                    // Upload audio to backend
                                     const formData = new FormData();
                                     formData.append('audio', audioBlob, 'record.wav');
                                     formData.append('filename', '{{ filename }}');
@@ -491,10 +491,10 @@ def index():
                                         processData: false,
                                         contentType: false,
                                         success: function(response) {
-                                            alert('音频上传成功');
+                                            alert('Audio upload successful');
                                         },
                                         error: function() {
-                                            alert('音频上传失败');
+                                            alert('Audio upload failed');
                                         }
                                     });
                                 };
@@ -502,7 +502,7 @@ def index():
                                 $('#stop-btn').attr('disabled', false);
                             })
                             .catch(err => {
-                                alert('无法访问麦克风: ' + err);
+                                alert('Cannot access microphone: ' + err);
                             });
                     });
 
@@ -511,14 +511,14 @@ def index():
                             mediaRecorder.stop();
                             $('#record-btn').attr('disabled', false);
                             $('#stop-btn').attr('disabled', true);
-                            $('#transcribe-btn').prop('disabled', false); // 录音结束后允许转录
+                            $('#transcribe-btn').prop('disabled', false); // Enable transcription after recording ends
                         }
                     });
 
-                    // 转录按钮事件
+                    // Transcribe button event
                     $('#transcribe-btn').on('click', function() {
                         $('#transcribe-btn').prop('disabled', true);
-                        $('#transcript-result').text('正在转录...');
+                        $('#transcript-result').text('Transcribing...');
                         $.ajax({
                             url: '/transcribe_audio',
                             type: 'POST',
@@ -526,13 +526,13 @@ def index():
                             data: JSON.stringify({ filename: filename }),
                             success: function(response) {
                                 if (response.success) {
-                                    $('#transcript-result').text('转录结果：' + response.transcript);
+                                    $('#transcript-result').text('Transcription result: ' + response.transcript);
                                 } else {
-                                    $('#transcript-result').text('转录失败：' + (response.error || '未知错误'));
+                                    $('#transcript-result').text('Transcription failed: ' + (response.error || 'Unknown error'));
                                 }
                             },
                             error: function() {
-                                $('#transcript-result').text('转录请求失败');
+                                $('#transcript-result').text('Transcription request failed');
                             }
                         });
                     });
