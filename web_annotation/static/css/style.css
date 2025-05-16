@@ -1,56 +1,88 @@
 body { 
-    font-family: Arial, sans-serif; 
-    margin: 20px; 
+    font-family: 'Roboto', 'Segoe UI', sans-serif; 
+    margin: 0; 
+    padding: 0;
+    background-color: #1e2433; 
+    color: #e0e0e0;
     text-align: center; 
 }
-h1 { 
-    color: #333; 
+
+h1, h2, h3, h4, h5, h6 { 
+    color: #ffffff; 
+    font-weight: 500;
 }
+
+h1 {
+    padding: 15px 0;
+    margin: 0;
+    background-color: #121824;
+    border-bottom: 1px solid #2d3748;
+}
+
 .container { 
-    margin: 30px auto; 
-    max-width: 1200px; 
+    margin: 20px auto; 
+    max-width: 1300px; 
     padding: 20px; 
-    border: 1px solid #ddd; 
-    border-radius: 5px; 
+    background-color: #232b3d; 
+    border: 1px solid #2d3748; 
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
 .upload-container { 
     margin: 30px auto; 
     max-width: 500px; 
-    padding: 20px; 
-    border: 1px solid #ddd; 
-    border-radius: 5px; 
+    padding: 25px; 
+    background-color: #232b3d; 
+    border: 1px solid #2d3748; 
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
+
 .image-container { 
     display: flex; 
     justify-content: space-between; 
     align-items: flex-start; 
     margin-top: 20px; 
+    background-color: #1a2235;
+    border-radius: 8px;
+    padding: 15px;
 }
+
 .image-section { 
     flex: 2; 
     display: flex; 
     flex-wrap: wrap; 
     justify-content: space-between; 
 }
+
 .image-box { 
     width: 32%; 
     margin-bottom: 15px; 
     text-align: center; 
+    background-color: #232b3d;
+    border-radius: 6px;
+    padding: 10px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
 }
+
 .image-box img { 
     max-width: 100%; 
     height: auto; 
-    border: 1px solid #ddd; 
+    border: 1px solid #2d3748; 
+    border-radius: 4px;
 }
+
 .prompt-section { 
     flex: 1; 
     margin-left: 20px; 
-    border-left: 1px solid #ddd; 
+    border-left: 1px solid #2d3748; 
     padding-left: 20px; 
     text-align: left; 
 }
+
 .back-btn, .upload-btn { 
-    background-color: #4CAF50; 
+    background-color: #3182ce; 
     color: white; 
     padding: 10px 20px; 
     border: none; 
@@ -59,85 +91,155 @@ h1 {
     margin-top: 20px; 
     text-decoration: none; 
     display: inline-block; 
+    transition: background-color 0.2s;
 }
+
 .back-btn:hover, .upload-btn:hover { 
-    background-color: #45a049; 
+    background-color: #2c5282; 
 }
+
 .slice-info { 
     font-weight: bold; 
-    color: #555; 
+    color: #a0aec0; 
     margin-top: 5px; 
 }
+
 .slider-container { 
     margin: 20px 0; 
+    background-color: #1a2235;
+    padding: 12px;
+    border-radius: 6px;
 }
+
 .slider-label { 
     display: inline-block; 
-    width: 80px; 
+    width: 100px; 
     text-align: right; 
-    margin-right: 10px; 
+    margin-right: 15px; 
+    color: #a0aec0;
 }
+
 .slider { 
     width: 300px; 
+    -webkit-appearance: none;
+    height: 8px;
+    background: #2d3748;
+    border-radius: 4px;
+    outline: none;
 }
+
+.slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3182ce;
+    cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #3182ce;
+    cursor: pointer;
+}
+
 .loading { 
     display: none; 
     margin: 20px auto; 
+    color: #3182ce;
+    font-weight: bold;
 }
+
 .controls-container { 
     display: flex; 
     justify-content: space-around; 
     flex-wrap: wrap; 
+    background-color: #1a2235;
+    border-radius: 8px;
+    padding: 10px;
+    margin-bottom: 20px;
 }
+
 .control-group { 
     margin: 10px; 
     min-width: 350px; 
 }
+
 .prompt-box { 
     width: 100%; 
+    background-color: #1a2235;
+    border-radius: 6px;
+    padding: 15px;
 }
+
 #prompt-text { 
     width: 100%; 
     height: 150px; 
     margin: 10px 0; 
-    padding: 8px; 
+    padding: 12px; 
     box-sizing: border-box; 
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-family: inherit;
+    resize: vertical;
 }
+
 #submit-prompt { 
-    background-color: #4CAF50; 
+    background-color: #3182ce; 
     color: white; 
-    padding: 8px 15px; 
+    padding: 10px 15px; 
     border: none; 
     border-radius: 4px; 
     cursor: pointer; 
+    transition: background-color 0.2s;
 }
+
 #submit-prompt:hover { 
-    background-color: #45a049; 
+    background-color: #2c5282; 
 }
+
 .prompt-result { 
     margin-top: 15px; 
-    padding: 10px; 
-    background-color: #f9f9f9; 
+    padding: 15px; 
+    background-color: #2d3748; 
     border-radius: 4px; 
     min-height: 100px; 
+    color: #e0e0e0;
 }
+
 .file-input { 
     margin: 20px 0; 
 }
+
+.file-input input[type="file"] {
+    background-color: #2d3748;
+    color: #e0e0e0;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #4a5568;
+    width: 100%;
+}
+
 .note { 
-    color: #666; 
+    color: #a0aec0; 
     font-size: 0.9em; 
     margin-top: 10px; 
 }
 
-/* 新增样式 - 矢状面视图窗口 */
+/* 矢状面视图窗口 */
 .sagittal-container {
     margin: 20px auto;
     max-width: 800px;
-    border: 1px solid #ddd;
-    border-radius: 5px;
+    border: 1px solid #2d3748;
+    border-radius: 8px;
     padding: 15px;
-    background-color: #f9f9f9;
+    background-color: #1a2235;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .sagittal-view-wrapper {
@@ -146,6 +248,8 @@ h1 {
     width: 100%;
     height: 500px;
     margin: 10px auto;
+    background-color: #121824;
+    border-radius: 6px;
 }
 
 .sagittal-view {
@@ -171,18 +275,19 @@ h1 {
 }
 
 .zoom-controls button {
-    background-color: #4CAF50;
+    background-color: #3182ce;
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 5px 10px;
+    padding: 8px 12px;
     margin: 0 5px;
     cursor: pointer;
     font-size: 16px;
+    transition: background-color 0.2s;
 }
 
 .zoom-controls button:hover {
-    background-color: #45a049;
+    background-color: #2c5282;
 }
 
 /* 截图和注释相关样式 */
@@ -194,45 +299,54 @@ h1 {
 }
 
 .sagittal-controls button {
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(49, 130, 206, 0.8);
     color: white;
     border: none;
     border-radius: 4px;
-    padding: 5px 10px;
+    padding: 8px 12px;
     cursor: pointer;
     margin-left: 5px;
+    transition: background-color 0.2s;
 }
 
 .sagittal-controls button:hover {
-    background-color: rgba(0, 0, 0, 0.9);
+    background-color: rgba(44, 82, 130, 0.9);
 }
 
 .screenshot-notification {
     position: fixed;
     top: 20px;
     right: 20px;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(26, 32, 44, 0.9);
     color: white;
     padding: 15px;
-    border-radius: 5px;
+    border-radius: 8px;
     z-index: 1000;
     display: flex;
     flex-direction: column;
     align-items: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border: 1px solid #2d3748;
 }
 
 .screenshot-notification img {
     margin: 10px 0;
-    border: 1px solid white;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
 }
 
 .screenshot-notification button {
-    background-color: #4CAF50;
+    background-color: #3182ce;
     color: white;
     border: none;
-    padding: 5px 10px;
-    border-radius: 3px;
+    padding: 8px 12px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.screenshot-notification button:hover {
+    background-color: #2c5282;
 }
 
 .audio-annotation-dialog {
@@ -240,24 +354,28 @@ h1 {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: white;
-    padding: 20px;
-    border-radius: 5px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    background-color: #232b3d;
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
     z-index: 1000;
     width: 400px;
     max-width: 90%;
+    border: 1px solid #2d3748;
 }
 
 .audio-annotation-dialog h3 {
     margin-top: 0;
     text-align: center;
+    color: #ffffff;
 }
 
 .audio-annotation-dialog img {
     display: block;
     margin: 10px auto;
     max-width: 100%;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
 }
 
 .audio-controls {
@@ -268,22 +386,23 @@ h1 {
 
 .audio-controls button {
     margin: 0 5px;
-    padding: 5px 10px;
-    background-color: #4CAF50;
+    padding: 8px 12px;
+    background-color: #3182ce;
     color: white;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .audio-controls button:disabled {
-    background-color: #cccccc;
+    background-color: #4a5568;
     cursor: not-allowed;
 }
 
 #recording-status {
     margin-left: 10px;
-    color: #ff0000;
+    color: #fc8181;
 }
 
 .audio-playback {
@@ -291,11 +410,22 @@ h1 {
     text-align: center;
 }
 
+.audio-playback audio {
+    background-color: #2d3748;
+    border-radius: 4px;
+}
+
 .annotation-text textarea {
     width: 100%;
     height: 80px;
     margin: 10px 0;
-    padding: 5px;
+    padding: 10px;
+    background-color: #2d3748;
+    border: 1px solid #4a5568;
+    border-radius: 4px;
+    color: #e0e0e0;
+    font-family: inherit;
+    resize: vertical;
 }
 
 .dialog-buttons {
@@ -307,33 +437,41 @@ h1 {
 .dialog-buttons button {
     margin: 0 5px;
     padding: 8px 15px;
-    background-color: #4CAF50;
+    background-color: #3182ce;
     color: white;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .dialog-buttons button#cancel-annotation {
-    background-color: #f44336;
+    background-color: #e53e3e;
+}
+
+.dialog-buttons button#cancel-annotation:hover {
+    background-color: #c53030;
 }
 
 .annotations-container {
     margin-top: 20px;
-    border-top: 1px solid #ccc;
-    padding-top: 10px;
+    border-top: 1px solid #2d3748;
+    padding-top: 15px;
 }
 
 .annotations-list {
     max-height: 300px;
     overflow-y: auto;
+    background-color: #1a2235;
+    border-radius: 6px;
+    padding: 10px;
 }
 
 .annotation-item {
     display: flex;
     margin-bottom: 15px;
     padding-bottom: 15px;
-    border-bottom: 1px solid #eee;
+    border-bottom: 1px solid #2d3748;
 }
 
 .annotation-image {
@@ -351,14 +489,82 @@ h1 {
 
 .annotation-audio audio {
     width: 100%;
+    background-color: #2d3748;
+    border-radius: 4px;
 }
 
 .annotation-text {
     margin-bottom: 5px;
     font-size: 14px;
+    color: #cbd5e0;
 }
 
 .annotation-timestamp {
     font-size: 12px;
-    color: #777;
+    color: #a0aec0;
+}
+
+/* 录音按钮样式 */
+#record-btn, #stop-btn, #transcribe-btn {
+    background-color: #3182ce;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 12px;
+    margin: 0 5px 10px 0;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#record-btn:hover, #stop-btn:hover, #transcribe-btn:hover {
+    background-color: #2c5282;
+}
+
+#record-btn:disabled, #stop-btn:disabled, #transcribe-btn:disabled {
+    background-color: #4a5568;
+    cursor: not-allowed;
+}
+
+#transcript-result {
+    background-color: #2d3748;
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 10px;
+    color: #cbd5e0;
+}
+
+/* 添加医疗标志和专业元素 */
+.medical-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 0;
+    background-color: #121824;
+    border-bottom: 1px solid #2d3748;
+}
+
+.medical-header .logo {
+    margin-right: 15px;
+    font-size: 24px;
+}
+
+.medical-info {
+    background-color: #1a2235;
+    border-radius: 6px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: left;
+    border-left: 4px solid #3182ce;
+}
+
+.medical-info p {
+    margin: 5px 0;
+    color: #cbd5e0;
+}
+
+.medical-info .label {
+    font-weight: bold;
+    color: #a0aec0;
+    display: inline-block;
+    width: 120px;
 }
