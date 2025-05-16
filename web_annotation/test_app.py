@@ -278,33 +278,30 @@ def transcribe_audio():
 
 @app.route('/save_screenshot', methods=['POST'])
 def save_screenshot():
-    """Save a screenshot of the sagittal view"""
-    if 'image' not in request.json:
-        return jsonify({'success': False, 'error': 'No image data provided'})
-    
-    image_data = request.json.get('image')
-    filename = request.json.get('filename', 'unknown')
-    view_type = request.json.get('view_type', 'sagittal')
-    
-    # 从Base64数据中提取图像数据
-    if image_data.startswith('data:image'):
-        # 移除data URL前缀
-        image_data = re.sub('^data:image/.+;base64,', '', image_data)
-    
-    # 生成时间戳文件名
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    screenshot_filename = f"{os.path.splitext(filename)[0]}_{view_type}_{timestamp}.png"
-    screenshot_path = os.path.join(app.config['SCREENSHOTS_FOLDER'], screenshot_filename)
-    
-    # 保存图像
+    """保存截图到服务器"""
     try:
-        with open(screenshot_path, "wb") as f:
-            f.write(base64.b64decode(image_data))
+        data = request.json
+        image_data = data.get('image')
+        filename = data.get('filename')
+        view_type = data.get('view_type', 'unknown')
+        
+        # 从Base64数据中提取图像数据
+        image_data = image_data.split(',')[1] if ',' in image_data else image_data
+        image_bytes = base64.b64decode(image_data)
+        
+        # 生成唯一的文件名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        screenshot_filename = f"{os.path.splitext(filename)[0]}_{view_type}_{timestamp}.png"
+        screenshot_path = os.path.join(app.config['SCREENSHOTS_FOLDER'], screenshot_filename)
+        
+        # 保存图像
+        with open(screenshot_path, 'wb') as f:
+            f.write(image_bytes)
         
         return jsonify({
-            'success': True, 
-            'filename': screenshot_filename,
-            'path': os.path.join('static', 'screenshots', screenshot_filename)
+            'success': True,
+            'path': f"/static/screenshots/{screenshot_filename}",
+            'filename': screenshot_filename
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -348,6 +345,35 @@ def associate_audio_with_image():
             'success': True,
             'annotation_id': annotation_id,
             'annotation_file': annotation_file
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
+
+@app.route('/get_screenshots', methods=['GET'])
+def get_screenshots():
+    """获取与特定文件相关的所有截图"""
+    filename = request.args.get('filename')
+    if not filename:
+        return jsonify({'success': False, 'error': '未提供文件名'})
+    
+    base_filename = os.path.splitext(filename)[0]
+    screenshots = []
+    
+    try:
+        for file in os.listdir(app.config['SCREENSHOTS_FOLDER']):
+            if file.startswith(base_filename) and file.endswith('.png'):
+                screenshots.append({
+                    'filename': file,
+                    'path': f"/static/screenshots/{file}",
+                    'timestamp': os.path.getmtime(os.path.join(app.config['SCREENSHOTS_FOLDER'], file))
+                })
+        
+        # 按时间戳排序，最新的在前
+        screenshots.sort(key=lambda x: x['timestamp'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'screenshots': screenshots
         })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})

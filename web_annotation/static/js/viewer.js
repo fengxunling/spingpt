@@ -176,6 +176,7 @@ $('#transcribe-btn').on('click', function() {
 
 // 获取文件名
 const filename = document.querySelector('h2').textContent.replace('File: ', '');
+const currentFilename = filename; 
 
 // 矢状面视图缩放功能
 $(document).ready(function() {
@@ -315,7 +316,7 @@ function saveScreenshot(imageData) {
         },
         body: JSON.stringify({
             image: imageData,
-            filename: currentFilename,
+            filename: currentFilename, // 使用正确的变量名
             view_type: 'sagittal'
         })
     })
@@ -333,6 +334,20 @@ function saveScreenshot(imageData) {
         console.error('截图保存错误:', error);
         alert('截图保存出错，请查看控制台');
     });
+}
+
+function loadSavedScreenshots() {
+    fetch(`/get_screenshots?filename=${encodeURIComponent(currentFilename)}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // 可以在这里更新UI显示已保存的截图
+                console.log('已加载截图列表:', data.screenshots);
+            }
+        })
+        .catch(error => {
+            console.error('加载截图列表错误:', error);
+        });
 }
 
 // 显示截图已保存的提示
