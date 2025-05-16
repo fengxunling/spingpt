@@ -221,38 +221,38 @@ def process_prompt():
 
 @app.route('/upload_audio', methods=['POST'])
 def upload_audio():
-    """接收前端上传的音频文件"""
+    """Receive audio file uploaded from frontend"""
     if 'audio' not in request.files:
-        return jsonify({'error': '没有音频文件'}), 400
+        return jsonify({'error': 'No audio file'}), 400
     audio = request.files['audio']
     filename = request.form.get('filename', 'unknown')
     save_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_record.wav")
     audio.save(save_path)
-    return jsonify({'success': True, 'message': '音频已保存'})
+    return jsonify({'success': True, 'message': 'Audio saved'})
 
 @app.route('/transcribe_audio', methods=['POST'])
 def transcribe_audio():
-    """音频转文字并保存"""
+    """Transcribe audio to text and save"""
     data = request.json
     filename = data.get('filename')
     if not filename:
-        return jsonify({'error': '缺少文件名'}), 400
+        return jsonify({'error': 'Missing filename'}), 400
     audio_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_record.wav")
     if not os.path.exists(audio_path):
-        return jsonify({'error': '音频文件不存在'}), 404
+        return jsonify({'error': 'Audio file does not exist'}), 404
 
     try:
         import whisper
         model = whisper.load_model("medium")
         result = model.transcribe(audio_path, language="en")
         transcript = result['text']
-        # 保存转录文本
+        # Save transcribed text
         transcript_path = os.path.join(app.config['UPLOAD_FOLDER'], f"{filename}_transcript.txt")
         with open(transcript_path, 'w', encoding='utf-8') as f:
             f.write(transcript)
         return jsonify({'success': True, 'transcript': transcript})
     except Exception as e:
-        return jsonify({'error': f'转录失败: {str(e)}'}), 500
+        return jsonify({'error': f'Transcription failed: {str(e)}'}), 500
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -350,9 +350,9 @@ def index():
                                 <textarea id="prompt-text" placeholder="Enter your prompt here..."></textarea>
                                 <button id="submit-prompt">Submit</button>
                                 <div style="margin-top:15px;">
-                                    <button id="record-btn">🎤 开始录音</button>
-                                    <button id="stop-btn" disabled>停止录音</button>
-                                    <button id="transcribe-btn" disabled>转录</button>
+                                    <button id="record-btn">🎤 Start recording</button>
+                                    <button id="stop-btn" disabled>Stop recording</button>
+                                    <button id="transcribe-btn" disabled>Transcribe</button>
                                     <audio id="audio-playback" controls style="display:none;margin-top:10px;"></audio>
                                     <div id="transcript-result" style="margin-top:10px;color:#333;"></div>
                                 </div>
