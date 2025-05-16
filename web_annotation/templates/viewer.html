@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Medical Image Viewer</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h1>Medical Image Viewer</h1>
+    <div class="container">
+        <h2>File: {{ filename }}</h2>
+        
+        <div class="controls-container">
+            <div class="control-group">
+                <div class="slider-container">
+                    <label class="slider-label">X-axis slice:</label>
+                    <input type="range" id="slice-x" class="slider" min="0" max="{{ dimensions[0]-1 }}" value="{{ dimensions[0]//2 }}">
+                    <span id="slice-x-value">{{ dimensions[0]//2 }}</span>
+                </div>
+                
+                <div class="slider-container">
+                    <label class="slider-label">Y-axis slice:</label>
+                    <input type="range" id="slice-y" class="slider" min="0" max="{{ dimensions[1]-1 }}" value="{{ dimensions[1]//2 }}">
+                    <span id="slice-y-value">{{ dimensions[1]//2 }}</span>
+                </div>
+                
+                <div class="slider-container">
+                    <label class="slider-label">Z-axis slice:</label>
+                    <input type="range" id="slice-z" class="slider" min="0" max="{{ dimensions[2]-1 }}" value="{{ dimensions[2]//2 }}">
+                    <span id="slice-z-value">{{ dimensions[2]//2 }}</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="loading">Updating...</div>
+        
+        <div class="image-container" id="image-container">
+            <div class="image-section">
+                {% for i in range(images|length) %}
+                <div class="image-box">
+                    <h3>{{ images[i].split('_')[-1].split('.')[0] }}</h3>
+                    <div class="slice-info" id="slice-info-{{ i }}">{{ slice_indices[i] }}</div>
+                    <img src="{{ url_for('static', filename='images/' + images[i]) }}" alt="{{ images[i] }}" id="image-{{ i }}">
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Prompt textbox taking 1/3 of space -->
+            <div class="prompt-section">
+                <h3>Enter Prompt</h3>
+                <div class="prompt-box">
+                    <textarea id="prompt-text" placeholder="Enter your prompt here..."></textarea>
+                    <button id="submit-prompt">Submit</button>
+                    <div style="margin-top:15px;">
+                        <button id="record-btn">🎤 Start recording</button>
+                        <button id="stop-btn" disabled>Stop recording</button>
+                        <button id="transcribe-btn" disabled>Transcribe</button>
+                        <audio id="audio-playback" controls style="display:none;margin-top:10px;"></audio>
+                        <div id="transcript-result" style="margin-top:10px;color:#333;"></div>
+                    </div>
+                    <div class="prompt-result" id="prompt-result">
+                        <p>Results will be shown here...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <a href="/" class="back-btn">Back to Upload Page</a>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/viewer.js') }}"></script>
+</body>
+</html>
