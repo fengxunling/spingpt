@@ -7,7 +7,7 @@
     "start": "electron .",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Jane Doe",
+  "author": "Wenxin Che",
   "license": "MIT",
   "devDependencies": {
     "electron": "23.1.3"

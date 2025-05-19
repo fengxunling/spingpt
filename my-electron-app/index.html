@@ -1,14 +1,30 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <title>Medical Image Upload</title>
-    <link rel="stylesheet" href="./static/css/style.css">
-  </head>
-  <body>
+    <link rel="stylesheet" href="static/css/style.css">
+    <script>
+        function handleFileUpload(event) {
+            event.preventDefault();
+            const fileInput = document.getElementById('file');
+            if (fileInput.files.length > 0) {
+                const selectedFile = fileInput.files[0];
+                // 保存文件信息到localStorage以便在viewer.html中使用
+                localStorage.setItem('selectedFileName', selectedFile.name);
+                localStorage.setItem('selectedFilePath', selectedFile.path);
+                // 跳转到viewer.html
+                window.location.href = 'viewer.html';
+            } else {
+                alert('请先选择一个文件');
+            }
+        }
+    </script>
+</head>
+<body>
     <h1>Medical Image Upload System</h1>
     <div class="upload-container">
         <p>Please select the medical image file to upload</p>
-        <form method="post" enctype="multipart/form-data">
+        <form id="uploadForm" onsubmit="handleFileUpload(event)">
             <div class="file-input">
                 <input type="file" name="file" id="file" accept=".nii.gz">
             </div>
@@ -16,6 +32,5 @@
         </form>
         <p class="note">Note: Only .nii.gz format files are supported</p>
     </div>
-  </body>
-  <script src="./renderer.js"></script>
-</html>v
+</body>
+</html>
