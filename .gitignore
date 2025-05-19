@@ -6,3 +6,7 @@
 /labelImg
 *.mp4
 *.wav
+/web_annotation/node_modules/@electron-forge
+/web_annotation/node_modules/@electron
+/web_annotation/node_modules
+/web_annotation/out

@@ -451,4 +451,7 @@ def index():
     return render_template('index.html')
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    # 从环境变量获取端口，如果没有则使用默认值5000
+    port = int(os.environ.get('FLASK_PORT', 5000))
+    # 在Electron环境中，我们需要监听所有接口，而不仅仅是localhost
+    app.run(host='0.0.0.0', port=port, debug=False)
