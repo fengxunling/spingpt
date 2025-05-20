@@ -40,7 +40,8 @@ class ViewerUI:
 
     def _init_ui(self, filepath):
         """Initialize viewer interface components"""
-        self.viewer.window._qt_window.showFullScreen()
+        # self.viewer.window._qt_window.showFullScreen()
+        self.viewer.window._qt_window.resize(1200, 900)
         self._create_sliders()
         self._setup_toolbar(filepath)
     

@@ -60,10 +60,12 @@ def main():
     previous_length = 0
 
     if len(sys.argv) < 2:
-        print("Please select a NIfTI file through file navigator")  # More specific prompt
-        sys.exit(1)
+        default_file = "T2G002_MRI_Spine_t2_space_sag_p2_iso_20240820161941_19001.nii.gz"
+        print(f"No file specified, using default file: {default_file}")
+        file_name = default_file
+    else:
+        file_name = sys.argv[1].strip('"')  # Remove potential quotes
         
-    file_name = sys.argv[1].strip('"')  # Remove potential quotes
     IMAGE_PATH = os.path.join(os.path.dirname(__file__), 'data')  # Standardize path format
     filepath = os.path.join(IMAGE_PATH, file_name)
     
@@ -425,6 +427,21 @@ def main():
             item = QListWidgetItem(item_text)
             item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
             rect_list.addItem(item)
+
+    @viewer.bind_key('R')  # 按3键打开3D视图
+    def open_3d_view(viewer):
+        """打开3D视图窗口"""
+        import subprocess
+        try:
+            subprocess.Popen([
+                sys.executable,
+                os.path.join(os.path.dirname(__file__), 'show_3d_view.py'),
+                file_name  # 使用当前打开的文件
+            ], shell=False)
+            print("正在打开3D视图...")
+        except Exception as e:
+            print(f"无法启动3D视图: {str(e)}")
+
 
 
     # automatically stop recording when the window is closed
