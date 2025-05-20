@@ -43,16 +43,6 @@ app.whenReady().then(() => {
     return null
   })
   
-  // 处理NIfTI文件的读取请求
-  ipcMain.handle('read-nifti-file', async (event, filePath) => {
-    try {
-      // 这里需要实现NIfTI文件的读取逻辑
-      // 可能需要使用Node.js的模块或调用Python脚本
-      return { success: true, message: `File ${filePath} processed successfully` }
-    } catch (error) {
-      return { success: false, message: error.message }
-    }
-  })
 })
 
 app.on('window-all-closed', () => {

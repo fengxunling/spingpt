@@ -3,7 +3,10 @@
 <head>
     <title>Medical Image Viewer</title>
     <link rel="stylesheet" href="static/css/style.css">
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.132.2/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/nifti-reader-js@0.5.4/release/current/nifti-reader.min.js"></script>
+    <script src="viewer.js" defer></script>
 </head>
 <body>
     <h1>Medical Image Viewer</h1>
@@ -32,86 +35,27 @@
             </div>
         </div>
         
-        <div class="loading">Updating...</div>
+        <div class="loading" id="loading-indicator">Loading...</div>
         
-        <div class="sagittal-container">
-            <h3>Sagittal View</h3>
-            <div class="zoom-controls">
-                <button id="zoom-in">+</button>
-                <button id="zoom-out">-</button>
-                <button id="reset-zoom">Reset</button>
-            </div>
-            <div class="sagittal-view-wrapper">
-                <div class="sagittal-view" id="sagittal-view">
-                    <div class="slice-info" id="sagittal-slice-info">50</div>
-                    <img src="" alt="Sagittal View" id="sagittal-image">
+        <div class="view-container">
+            <div id="3d-container"></div>
+            <div class="slice-views">
+                <div id="axial-view" class="slice-view">
+                    <h3>Axial View</h3>
+                    <canvas id="axial-canvas"></canvas>
+                </div>
+                <div id="sagittal-view" class="slice-view">
+                    <h3>Sagittal View</h3>
+                    <canvas id="sagittal-canvas"></canvas>
+                </div>
+                <div id="coronal-view" class="slice-view">
+                    <h3>Coronal View</h3>
+                    <canvas id="coronal-canvas"></canvas>
                 </div>
             </div>
         </div>
         
-        <div class="image-container" id="image-container">
-            <div class="image-section">
-                <div class="image-box">
-                    <h3>Axial</h3>
-                    <div class="slice-info" id="slice-info-0">50</div>
-                    <img src="" alt="Axial View" id="image-0">
-                </div>
-                <div class="image-box">
-                    <h3>Sagittal</h3>
-                    <div class="slice-info" id="slice-info-1">50</div>
-                    <img src="" alt="Sagittal View" id="image-1">
-                </div>
-            </div>
-            
-            <div class="prompt-section">
-                <h3>Enter Prompt</h3>
-                <div class="prompt-box">
-                    <textarea id="prompt-text" placeholder="Enter your prompt here..."></textarea>
-                    <button id="submit-prompt">Submit</button>
-                    <div style="margin-top:15px;">
-                        <button id="record-btn">🎤 Start recording</button>
-                        <button id="stop-btn" disabled>Stop recording</button>
-                        <button id="transcribe-btn" disabled>Transcribe</button>
-                        <audio id="audio-playback" controls style="display:none;margin-top:10px;"></audio>
-                        <div id="transcript-result" style="margin-top:10px;color:#333;"></div>
-                    </div>
-                    <div class="prompt-result" id="prompt-result">
-                        <p>Results will be shown here...</p>
-                    </div>
-                </div>
-            </div>
-        </div>
         <a href="index.html" class="back-btn">Back to Upload Page</a>
     </div>
-    
-    <script>
-        // 页面加载时从localStorage获取文件信息
-        document.addEventListener('DOMContentLoaded', function() {
-            const fileName = localStorage.getItem('selectedFileName');
-            const filePath = localStorage.getItem('selectedFilePath');
-            
-            if (fileName) {
-                document.getElementById('filename').textContent = `File: ${fileName}`;
-                // 这里可以添加加载文件和处理图像的代码
-                // 例如调用后端API或使用Node.js的功能来处理NIfTI文件
-            }
-            
-            // 为滑块添加事件监听器
-            document.getElementById('slice-x').addEventListener('input', function() {
-                document.getElementById('slice-x-value').textContent = this.value;
-                // 更新图像的代码
-            });
-            
-            document.getElementById('slice-y').addEventListener('input', function() {
-                document.getElementById('slice-y-value').textContent = this.value;
-                // 更新图像的代码
-            });
-            
-            document.getElementById('slice-z').addEventListener('input', function() {
-                document.getElementById('slice-z-value').textContent = this.value;
-                // 更新图像的代码
-            });
-        });
-    </script>
 </body>
 </html>
