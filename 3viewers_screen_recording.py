@@ -98,17 +98,17 @@ def main():
                     recorder=recorder, RECORD_PATH=RECORD_PATH)
     viewer = viewer3d.get_viewer()
 
-    # 在初始化时添加(0, 0)点进行测试
-    image_layer = viewer.layers['Sagittal']
-    origin_point = np.array([[0, 0]]) 
-    origin_physical = origin_point * image_layer.scale + image_layer.translate
-    viewer.add_points(
-        origin_physical,
-        name='Origin Point',
-        size=2,
-        face_color='blue',
-        edge_color='black'
-    )
+    # # 在初始化时添加(0, 0)点进行测试
+    # image_layer = viewer.layers['Sagittal']
+    # origin_point = np.array([[0, 0]]) 
+    # origin_physical = origin_point * image_layer.scale + image_layer.translate
+    # viewer.add_points(
+    #     origin_physical,
+    #     name='Origin Point',
+    #     size=2,
+    #     face_color='blue',
+    #     edge_color='black'
+    # )
 
     def calculate_base_scale(image_shape, screen_size):
         """Calculate base scaling ratio based on image dimensions and screen space"""
@@ -341,74 +341,51 @@ def main():
     @viewer.bind_key('B')
     def toggle_rectangle_mode(viewer):
         global shapes_layer, image_layer
-        
-        # Check if already in rectangle annotation mode
-        if 'add rectangle' in viewer.layers and viewer.layers['add rectangle'].visible:
-            # Exit rectangle annotation mode
-            shapes_layer = viewer.layers['add rectangle']
-            shapes_layer.visible = False
-            
-            # Restore mouse interaction for all layers
-            for layer in viewer.layers:
-                layer.mouse_pan = True
-                layer.mouse_zoom = True
-            
-            viewer3d.get_status_label().setText("Mode: Normal")
-            viewer3d.get_status_label().setStyleSheet("color: green;")
-            return
-        
-        # Enter rectangle annotation mode
-        # Get current axial view layer
+
+        # 每次都新建一个唯一名字的 layer
+        import time
+        layer_name = f'add rectangle {int(time.time())}'
+
+        # 获取当前 Sagittal 层
         image_layer = viewer.layers['Sagittal']
-        
-        # Check if current dimension is axial view (third dimension)
-        current_z = viewer.dims.current_step[0]  
+
+        # 检查当前 Z 轴切片是否有效
+        current_z = viewer.dims.current_step[0]
         max_z = viewer3d.image_array.shape[0] - 1
         if not (0 <= current_z <= max_z):
-                viewer3d.get_status_label().setText("Please select a valid Z-axis slice")
-                viewer3d.get_status_label().setStyleSheet("color: red;")
-                return
-        
-        # Create or get rectangle layer
-        if 'add rectangle' not in viewer.layers:
-            # print(f'====not have add rectangle layer===')
-            shapes_layer = viewer.add_shapes(
-                name='add rectangle',
-                shape_type='rectangle',
-                edge_color=RECTANGLE_COLOR,
-                edge_width=RECTANGLE_WIDTH,
-                face_color=[0,0,0,0],
-                ndim=2,
-                scale=image_layer.scale,
-                translate=image_layer.translate
-            )
-            viewer.layers.move(len(viewer.layers)-1, -1)
-            # Set flag immediately during initialization
-            shapes_layer._event_connected = False  # Add initialization flag
-        else:
-            # print(f'====already have add rectangle layer===')
-            shapes_layer = viewer.layers['add rectangle']
-            shapes_layer.visible = True
-            # Precisely disconnect the specified event handler
-            try:
-                shapes_layer.events.data.disconnect(on_shape_added)
-            except:
-                pass
+            viewer3d.get_status_label().setText("Please select a valid Z-axis slice")
+            viewer3d.get_status_label().setStyleSheet("color: red;")
+            return
 
-        # Ensure single event binding
+        # 新建 rectangle layer
+        shapes_layer = viewer.add_shapes(
+            name=layer_name,
+            shape_type='rectangle',
+            edge_color=RECTANGLE_COLOR,
+            edge_width=RECTANGLE_WIDTH,
+            face_color=[0,0,0,0],
+            ndim=2,
+            scale=image_layer.scale,
+            translate=image_layer.translate
+        )
+        viewer.layers.move(len(viewer.layers)-1, -1)
+        shapes_layer._event_connected = False  # 初始化 flag
+
+        # 只绑定一次事件
         if not getattr(shapes_layer, '_event_connected', False):
             shapes_layer.events.data.connect(on_shape_added)
-            shapes_layer._event_connected = True  # Update flag
+            shapes_layer._event_connected = True
 
-        # Disable interaction with other layers
+        # 禁用其它层交互
         with shapes_layer.events.data.blocker():
             for layer in viewer.layers:
                 layer.mouse_pan = False
                 layer.mouse_zoom = False
             viewer.layers.move(viewer.layers.index(shapes_layer), -1)
-        
-        viewer3d.get_status_label().setText("Mode: Rectangle Annotation")
+
+        viewer3d.get_status_label().setText(f"Mode: Rectangle Annotation ({layer_name})")
         viewer3d.get_status_label().setStyleSheet("color: blue;")
+
 
     @viewer.bind_key('C')  
     def refresh_polygons(viewer):
