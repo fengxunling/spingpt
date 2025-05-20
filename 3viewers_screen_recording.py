@@ -342,14 +342,14 @@ def main():
     def toggle_rectangle_mode(viewer):
         global shapes_layer, image_layer
 
-        # 每次都新建一个唯一名字的 layer
+        # Create a layer with unique name each time
         import time
         layer_name = f'add rectangle {int(time.time())}'
 
-        # 获取当前 Sagittal 层
+        # Get current Sagittal layer
         image_layer = viewer.layers['Sagittal']
 
-        # 检查当前 Z 轴切片是否有效
+        # Check if current Z-axis slice is valid
         current_z = viewer.dims.current_step[0]
         max_z = viewer3d.image_array.shape[0] - 1
         if not (0 <= current_z <= max_z):
@@ -357,7 +357,7 @@ def main():
             viewer3d.get_status_label().setStyleSheet("color: red;")
             return
 
-        # 新建 rectangle layer
+        # Create new rectangle layer
         shapes_layer = viewer.add_shapes(
             name=layer_name,
             shape_type='rectangle',
@@ -369,14 +369,14 @@ def main():
             translate=image_layer.translate
         )
         viewer.layers.move(len(viewer.layers)-1, -1)
-        shapes_layer._event_connected = False  # 初始化 flag
+        shapes_layer._event_connected = False  # Initialize flag
 
-        # 只绑定一次事件
+        # Only bind event once
         if not getattr(shapes_layer, '_event_connected', False):
             shapes_layer.events.data.connect(on_shape_added)
             shapes_layer._event_connected = True
 
-        # 禁用其它层交互
+        # Disable interaction with other layers
         with shapes_layer.events.data.blocker():
             for layer in viewer.layers:
                 layer.mouse_pan = False
@@ -405,19 +405,19 @@ def main():
             item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
             rect_list.addItem(item)
 
-    @viewer.bind_key('R')  # 按3键打开3D视图
+    @viewer.bind_key('R')  # Press R key to open 3D view
     def open_3d_view(viewer):
-        """打开3D视图窗口"""
+        """Open 3D view window"""
         import subprocess
         try:
             subprocess.Popen([
                 sys.executable,
                 os.path.join(os.path.dirname(__file__), 'show_3d_view.py'),
-                file_name  # 使用当前打开的文件
+                file_name  # Use current opened file
             ], shell=False)
-            print("正在打开3D视图...")
+            print("Opening 3D view...")
         except Exception as e:
-            print(f"无法启动3D视图: {str(e)}")
+            print(f"Failed to launch 3D view: {str(e)}")
 
 
 

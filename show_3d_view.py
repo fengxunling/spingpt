@@ -33,7 +33,7 @@ def show_3d_view(filepath):
     volume_layer = viewer.add_image(
         image_array,
         rendering='mip',  # 最大强度投影
-        name='3D体积',
+        name='3D render image',
         blending='additive',
         opacity=0.7
     )
