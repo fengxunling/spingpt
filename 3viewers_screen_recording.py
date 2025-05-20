@@ -143,7 +143,7 @@ def main():
         viewer.window._qt_window.menuBar().setVisible(False),
         viewer.window._qt_window.statusBar().setVisible(False),
         [btn.setVisible(False) for btn in viewer.window._qt_window.findChildren(QPushButton) 
-         if btn.objectName() not in ["audio_record_btn", "ai_submit_btn"]],  # add audio_record_btn
+         if btn.objectName() not in ["audio_record_btn", "ai_submit_btn", "toggle_rect_btn"]],  # add audio_record_btn
     ])
     
     # Add timer for auto-start recording after UI loading completes

@@ -74,6 +74,15 @@ class ViewerUI:
         audio_layout.setContentsMargins(0, 10, 0, 10)
         layout.addLayout(audio_layout)
 
+        toggle_layout = QHBoxLayout()
+        self.rect_visible = True  # 默认显示
+        self.toggle_rect_btn = QPushButton("hide")
+        self.toggle_rect_btn.setObjectName("toggle_rect_btn")
+        self.toggle_rect_btn.setMinimumWidth(120)
+        self.toggle_rect_btn.clicked.connect(self.toggle_rectangles_visibility)
+        toggle_layout.addWidget(self.toggle_rect_btn)
+        layout.addLayout(toggle_layout)
+
         # Text annotation input box
         self.annotation_edit = QLineEdit()
         self.annotation_edit.setPlaceholderText("Enter rectangle annotation...")
@@ -81,7 +90,7 @@ class ViewerUI:
         layout.addWidget(QLabel("Annotation Text"))
         layout.addWidget(self.annotation_edit)
 
-        # +++ Add AI interaction components +++
+        # AI interaction components 
         ai_layout = QVBoxLayout()
         
         # Command input box
@@ -111,6 +120,23 @@ class ViewerUI:
 
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
+
+
+    def toggle_rectangles_visibility(self):
+        """切换所有已标注矩形的可见性"""
+        # 假设 shapes 图层名为 'add rectangle'，可根据实际情况调整
+        viewer = self.viewer
+        if 'add rectangle' in viewer.layers:
+            shapes_layer = viewer.layers['add rectangle']
+            self.rect_visible = not self.rect_visible
+            shapes_layer.visible = self.rect_visible
+            if self.rect_visible:
+                self.toggle_rect_btn.setText("hide")
+            else:
+                self.toggle_rect_btn.setText("display")
+        else:
+            # 没有矩形图层时按钮置灰
+            self.toggle_rect_btn.setEnabled(False)
 
     def apply_layout_settings(self):
         """Apply layout settings based on interface dimensions"""
