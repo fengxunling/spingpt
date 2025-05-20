@@ -242,7 +242,7 @@ def main():
             # item = QListWidgetItem(f"Rectangle {rect_id+1} - {audio_path}")
             item = QListWidgetItem(f"Rectangle {rect_id+1}")
             item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
-            viewer3d.rect_list.addItem(item)
+            # viewer3d.rect_list.addItem(item)
 
         except IndexError as e:
             print(f"Error processing shape data: {str(e)}")
