@@ -1,5 +1,4 @@
 /ffmpeg
-/data
 /napari-nifti
 /NeuroRecord
 *.zip
@@ -9,4 +8,5 @@
 /web_annotation/node_modules/@electron-forge
 /web_annotation/node_modules/@electron
 /web_annotation/node_modules
-/web_annotation/out
+/web_annotation/
+/my-electron-app
