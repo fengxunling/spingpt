@@ -32,7 +32,8 @@ from scipy.io.wavfile import write as write_wav
 FPS = 15  # frames per second
 RECORD_REGION = None  # set the recording region to default
 
-FONT_PATH = "arial.ttf"  # font file path
+FONT_PATH = os.path.dirname(__file__)+'/assets/arial.ttf'  # font file path
+# FONT_PATH = None
 FONT_SIZE = 30
 TEXT_COLOR = 255  
 TEXT_POSITION = (10, 10)  # text position
