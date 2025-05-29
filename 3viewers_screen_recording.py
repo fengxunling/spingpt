@@ -414,7 +414,7 @@ def main():
 
         # Only bind event once
         if not getattr(shapes_layer, '_event_connected', False):
-            shapes_layer.events.data.connect(on_shape_added)
+            shapes_layer.events.data.connect(viewer3d.on_shape_added)
             shapes_layer._event_connected = True
 
         # Disable interaction with other layers

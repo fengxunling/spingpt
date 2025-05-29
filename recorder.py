@@ -198,10 +198,3 @@ class ScreenRecorder:
         if self.writer:
             self.writer.close()
         print(f"The video is saved at: {os.path.abspath(self.video_path)}")
-
-        # # stop audio recording and save
-        # if self.audio_thread:
-        #     self.audio_thread.join()
-        #     if self.audio_frames:
-        #         audio_data = np.concatenate(self.audio_frames)
-        #         write_wav(self.audio_filename, self.fs, audio_data) 

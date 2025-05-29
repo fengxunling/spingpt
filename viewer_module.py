@@ -2,6 +2,7 @@ from qtpy.QtCore import Qt
 from qtpy.QtWidgets import (QSlider, QLineEdit, QWidget, QLabel, QVBoxLayout, QHBoxLayout,
                            QPushButton, QSizePolicy)
 from qtpy.QtWidgets import QInputDialog
+from qtpy.QtWidgets import QListWidgetItem 
 import numpy as np
 import napari 
 from napari import Viewer
@@ -577,3 +578,76 @@ class ViewerUI:
                         })
         
         return len(polygons), polygons
+
+    def refresh_polygons(self):
+        """Refresh the polygon list in the side panel"""
+        # Get all annotation data
+        annotation_count, annotations = self.count_polygons()
+        
+        # Clear and update right side list
+        self.rect_list.clear()
+
+        for idx, ann in enumerate(annotations, 1):
+            item_text = f"Rectangle {idx} [Sagittal]\nAnnotation: {ann.get('text','')}\n" + \
+                f"[{ann['layer']}]\nVertices: {len(ann['coordinates'])}\n" 
+                
+            item = QListWidgetItem(item_text)
+            item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
+            self.rect_list.addItem(item)
+
+        # Select the last added rectangle
+        last_row = self.rect_list.count() - 1
+        if last_row >= 0:
+            self.rect_list.setCurrentRow(last_row)
+            item = self.rect_list.item(last_row)
+            self._on_rect_selected(item)
+
+    def on_shape_added(self, event):
+        """Shape addition event handler"""
+        print(f'====on_shape_added')
+
+        if not event.source.data:
+            print("Warning: Received empty shape data event")
+            return
+
+        try:
+            latest_rect = event.source.data[-1]
+            print(f'==self.rect_metadata={self.rect_metadata}')
+            
+            # Get physical coordinates
+            image_layer = self.viewer.layers['Sagittal']
+            origin_point = np.array([[0, 0]])  
+            origin_physical = origin_point * image_layer.scale + image_layer.translate
+            physical_coord = latest_rect - origin_physical
+            coord_str = f"Physical coordinates: {np.round(physical_coord, 2).tolist()}"
+
+            # Define rect_id before metadata initialization
+            rect_id = len(self.rect_metadata)  # Add rect_id definition
+            # Get current slice position
+            current_z, current_y, current_x = self.viewer.dims.current_step
+            print(f'current_z, current_y, current_x: {current_z, current_y, current_x}')
+            
+            # Save metadata
+            timestamp_log = datetime.now().strftime('%H:%M:%S')
+            self.rect_metadata[rect_id] = {
+                "text": "",
+                "coords": physical_coord.tolist(),
+                "slice_indices": (current_z, current_y, current_x),
+                "timestamp": timestamp_log,
+                "coord_str": coord_str
+            }
+
+            # Create list item with user data (rect_id)
+            item = QListWidgetItem(f"Rectangle {rect_id+1}")
+            item.setData(Qt.UserRole, rect_id)  # Store corresponding metadata ID
+
+            # Automatically refresh the polygon list and select the new rectangle
+            self.refresh_polygons()
+
+        except IndexError as e:
+            print(f"Error processing shape data: {str(e)}")
+        except KeyError as e:
+            print(f"Sagittal layer not found: {str(e)}")
+        
+        # Connect double-click event (should be set during ViewerUI initialization)
+        self.rect_list.itemDoubleClicked.connect(self.on_rect_item_clicked)
