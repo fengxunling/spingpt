@@ -338,9 +338,6 @@ def main():
             audio_path = metadata.get("audio", "")
             current_z, current_y, current_x = metadata.get("slice_indices", (0, 0, 0))
             
-            current_z = np.clip(current_z, 0, self.image_array.shape[0]-1)
-            current_x = np.clip(current_x, 0, self.image_array.shape[2]-1)
-            
             log_text = f"[Rectangle {rect_id} Annotation] {timestamp_log}\n{coord_str}\nNote: Audio: {audio_path}\n(x={current_x}, y={current_y}, z={current_z})\n------------------------\n"
             all_annotations.append(log_text)
         
@@ -461,6 +458,7 @@ def main():
     # automatically stop recording when the window is closed
     def on_close(event):
         if recorder.is_recording:
+            save_all_annotations() 
             recorder.stop_recording()
     viewer.window._qt_window.closeEvent = on_close
 
