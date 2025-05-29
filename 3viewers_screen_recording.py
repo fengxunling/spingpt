@@ -189,54 +189,53 @@ def main():
     # # 绑定事件
     # points_layer.events.data.connect(on_points_changed)
 
-    @viewer.bind_key('P')
-    def add_new_points_layer(viewer):
-        """Create a new points layer with a unique name"""
-        import time
-        layer_name = f'points_layer_{int(time.time())}'
+    # @viewer.bind_key('P')
+    # def add_new_points_layer(viewer):
+    #     # Create a more unique name using both timestamp and microseconds
         
-        # Get current image layer for scale and translate properties
-        image_layer = viewer.layers['Sagittal']
+    #     # Get current image layer for scale and translate properties
+    #     image_layer = viewer.layers['Sagittal']
         
-        # Create new points layer with the same scale and translate as the image
-        new_points_layer = viewer.add_points(
-            name=layer_name,
-            ndim=3,
-            size=3,
-            face_color='red',
-            scale=image_layer.scale,
-            translate=image_layer.translate
-        )
+    #     # Create new points layer with the same scale and translate as the image
+    #     new_points_layer = viewer.add_points(
+    #         name='points_layer',
+    #         ndim=3,
+    #         size=3,
+    #         face_color='red',
+    #         scale=image_layer.scale,
+    #         translate=image_layer.translate
+    #     )
         
-        # Make the new layer the active layer
-        viewer.layers.selection.active = new_points_layer
+    #     # Make the new layer the active layer and ensure it's selected
+    #     # viewer.layers.selection.clear()
+    #     # viewer.layers.selection.add(new_points_layer)
+    #     viewer.layers.selection.active = new_points_layer
         
-        # Add points change event handler for the new layer
-        def on_points_changed(event):
-            current_points = event.source.data
-            if len(current_points) > 0:
-                # Get the most recently added point
-                new_point = current_points[-1]
-                current_z, current_y, current_x = viewer.dims.current_step
-                timestamp_log = datetime.now().strftime('%H:%M:%S')
+    #     # Add points change event handler for the new layer
+    #     def on_points_changed(event):
+    #         current_points = event.source.data
+    #         if len(current_points) > 0:
+    #             # Get the most recently added point
+    #             new_point = current_points[-1]
+    #             current_z, current_y, current_x = viewer.dims.current_step
+    #             timestamp_log = datetime.now().strftime('%H:%M:%S')
                 
-                # Convert point coordinates (z,y,x format to x,y,z format)
-                x, y, z = new_point[2], new_point[1], new_point[0]
-                log_text = f"[Point Annotation - {layer_name}] {timestamp_log}\n"
-                log_text += f"Point coordinate (data): (x={x}, y={y}, z={z})\n"
-                log_text += f"Current slice index: (z={current_z}, y={current_y}, x={current_x})\n"
-                log_text += "------------------------\n"
+    #             # Convert point coordinates (z,y,x format to x,y,z format)
+    #             x, y, z = new_point[2], new_point[1], new_point[0]
+    #             log_text = f"[Point Annotation\n"
+    #             log_text += f"Point coordinate (data): (x={x}, y={y}, z={z})\n"
+    #             log_text += f"Current slice index: (z={current_z}, y={current_y}, x={current_x})\n"
+    #             log_text += "------------------------\n"
                 
-                if recorder.is_recording:
-                    recorder.add_annotation(log_text)
+    #             if recorder.is_recording:
+    #                 recorder.add_annotation(log_text)
         
-        # Connect the event handler
-        new_points_layer.events.data.connect(on_points_changed)
-        print(f"Created new points layer: {layer_name}")
+    #     # Connect the event handler
+    #     new_points_layer.events.data.connect(on_points_changed)
         
-        # Update status label to show current active layer
-        viewer3d.get_status_label().setText(f"Active Layer: {layer_name}")
-        viewer3d.get_status_label().setStyleSheet("color: blue;")
+    #     # Update status label to show current active layer
+    #     viewer3d.get_status_label().setText(f"Active Layer: {layer_name}")
+    #     viewer3d.get_status_label().setStyleSheet("color: blue;")
 
     def on_shape_added(event):
         print(f'====on_shape_added')
