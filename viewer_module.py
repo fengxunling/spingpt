@@ -60,7 +60,7 @@ class ViewerUI:
         layout.addWidget(self.file_name_label)
 
         # add layer information
-        self.corner_label = QLabel("Image mode + B => annotation mode\nClick axial/sagittal view => Image mode\nImage mode + R => open 3D image\n Annotation mode + C => open annotation list")
+        self.corner_label = QLabel("D => open 3D image\n M=> add new annotation\nC => open annotation list")
         self.corner_label.setWordWrap(True)
         self.corner_label.setStyleSheet("color: black; background-color: #f0f0f0; padding: 5px; border-radius: 3px;")
         self.corner_label.setAlignment(Qt.AlignCenter)

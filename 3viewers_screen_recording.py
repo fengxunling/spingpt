@@ -351,7 +351,7 @@ def main():
 
 
     # ================= bind with key ======================
-    @viewer.bind_key('M')  # press to start/stop recording
+    @viewer.bind_key('R')  # press to start/stop recording
     def toggle_recording(viewer):
         global status_label
         if not recorder.is_recording:
@@ -374,9 +374,14 @@ def main():
         viewer.window.close()
 
 
-    @viewer.bind_key('B')
+    @viewer.bind_key('M')
     def toggle_rectangle_mode(viewer):
         global shapes_layer, image_layer
+
+        # Hide previous annotation layers
+        for layer in viewer.layers:
+            if isinstance(layer, napari.layers.Shapes) and layer.name.startswith('add rectangle'):
+                layer.visible = False
 
         # Create a layer with unique name each time
         import time
@@ -441,7 +446,7 @@ def main():
             item.setFlags(item.flags() | Qt.TextWordWrap)  # Enable text wrapping
             rect_list.addItem(item)
 
-    @viewer.bind_key('R')  # Press R key to open 3D view
+    @viewer.bind_key('D')  # Press R key to open 3D view
     def open_3d_view(viewer):
         """Open 3D view window"""
         import subprocess
