@@ -368,8 +368,8 @@ class ViewerUI:
         self.section_lines_sagittal = self.viewer.add_shapes(
             name='Section Lines Sagittal',
             shape_type='line',
-            edge_color='yellow',
-            edge_width=2,
+            edge_color='white',
+            edge_width=3,
             scale=self.sagittal_layer.scale,
             translate=self.sagittal_layer.translate,
             visible=True
@@ -377,8 +377,8 @@ class ViewerUI:
         self.section_lines_axial = self.viewer.add_shapes(
             name='Section Lines Axial',
             shape_type='line',
-            edge_color='yellow',
-            edge_width=2,
+            edge_color='white',
+            edge_width=3,
             scale=self.axial_layer.scale,
             translate=self.axial_layer.translate,
             visible=True
@@ -392,8 +392,8 @@ class ViewerUI:
     def _update_slices(self, event):
         """Slice update logic"""
         # z, y, x = viewer.dims.current_step
-        # z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1)
-        z = self.image_array.shape[0] - np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) + 1
+        # z = self.image_array.shape[0] - np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1) + 1
+        z = np.clip(self.viewer.dims.current_step[0], 0, self.image_array.shape[0]-1)
         y = np.clip(self.viewer.dims.current_step[1], 0, self.image_array.shape[1]-1)
         x = np.clip(self.viewer.dims.current_step[2], 0, self.image_array.shape[2]-1)
 
@@ -418,12 +418,13 @@ class ViewerUI:
         ]
         line_data_sagittal = [
             # Sagittal view vertical line
-            [(current_z, 0), (current_z, self.image_array.shape[1])],
+            [(self.image_array.shape[0]-current_z+1, 0), (self.image_array.shape[0]-current_z+1, self.image_array.shape[1])],
         ]
         
         self.section_lines_axial.data = line_data_axial
         self.section_lines_sagittal.data = line_data_sagittal
-        self.coord_label.setText(f"Section Position: Z:{current_z} Y:{current_y} X:{current_x}")
+        # self.coord_label.setText(f"Section Position: Z:{current_z} Y:{current_y} X:{current_x}")
+        # print(f'current_z={current_z}, current_y={current_y}, current_x={current_x}')
     
     def toggle_audio_recording(self):
         """Toggle audio recording status"""
