@@ -62,7 +62,7 @@ class NIFTINavigator:
                         text=filename,
                         tags=('nii_file',)
                     )
-                    self.file_list.append(full_path)
+                    self.file_list.append(full_path)                       
     
     def _get_parent_node(self, path):
         """Build tree directory structure"""

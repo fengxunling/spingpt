@@ -33,7 +33,7 @@ class ViewerUI:
         self._init_ui(filepath)
         self._setup_layers()
         self._connect_events()
-        self._init_side_panel()
+        # self._init_side_panel()
         self.audio_recording = False 
         self.audio_frames = []
         
@@ -44,11 +44,20 @@ class ViewerUI:
         self.viewer.window._qt_window.resize(1200, 900)
         self._create_sliders()
         self._setup_toolbar(filepath)
+        print(f'filepath={filepath}')
+        self._init_side_panel(filepath)
     
-    def _init_side_panel(self):
+    def _init_side_panel(self, filepath):
         """Initialize right-side annotation panel"""
         self.side_panel = QWidget()
         layout = QVBoxLayout()
+
+        #add file name
+        self.file_name_label = QLabel(f"current file: {os.path.basename(filepath)}")
+        self.file_name_label.setWordWrap(True)
+        self.file_name_label.setStyleSheet("color: black; background-color: #e0e0e0; padding: 5px; border-radius: 3px; font-weight: bold;")
+        self.file_name_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.file_name_label)
 
         # add layer information
         self.corner_label = QLabel("Image mode + B => annotation mode\nClick axial/sagittal view => Image mode\nImage mode + R => open 3D image\n Annotation mode + C => open annotation list")

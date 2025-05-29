@@ -10,3 +10,6 @@
 /web_annotation/node_modules
 /web_annotation/
 /my-electron-app
+/data/dataset_resolution_uncropped
+/data/SPL007
+*.gz

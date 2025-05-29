@@ -1,0 +1,13 @@
+
+[Video Recording Started] 2025-05-22 15:34:22.821
+[Annotation] 2025-05-22 15:34:51.823
+Content: [Rectangle 0 Annotation] 15:34:43
+Physical coordinates: [[524.51, 251.45], [524.51, 342.03], [583.95, 342.03], [583.95, 251.45]]
+Note: Audio: 
+(x=31, y=457, z=320)
+------------------------
+
+------------------------
+[Video Recording Ended] 2025-05-22 15:34:51.824
+[Duration] 29.00 seconds
+
