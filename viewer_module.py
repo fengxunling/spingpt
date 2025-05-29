@@ -458,32 +458,42 @@ class ViewerUI:
 
     def save_and_transcribe_audio(self):
         """Save audio and transcribe"""
+        print('==save and transcribe audio==')
+        
         if not self.audio_frames:
+            print("No audio data recorded")
+            self.ai_response.setText("No audio data recorded")
             return
         
-        # Concatenate audio data
-        audio_data = np.concatenate(self.audio_frames, axis=0)
-        
-        # Generate filename
-        current_rect = self.rect_list.currentRow()
-        rect_id = current_rect if current_rect != -1 else len(self.rect_metadata)
-        audio_path = f"{self.recorder.image_name}_rect{rect_id}_annotation.wav"
-        
-        # Save WAV file
-        write(os.path.dirname(__file__)+'/recorded_materials/'+audio_path, self.fs, audio_data)
-        
-        # # Call transcription function
-        # txt_path = audio_path.replace('.wav', '.txt')
-        # transcribe_audio(audio_path, txt_path)
-        
-        # # Load result to text box
-        # with open(txt_path, 'r', encoding='utf-8') as f:
-        #     self.annotation_edit.setText(f.read())
+        try:
+            # Concatenate audio data
+            audio_data = np.concatenate(self.audio_frames, axis=0)
+            
+            # Generate filename
+            current_rect = self.rect_list.currentRow()
+            rect_id = current_rect if current_rect != -1 else len(self.rect_metadata)
+            audio_path = f"{self.recorder.image_name}_rect{rect_id}_annotation.wav"
+            
+            # Save WAV file
+            save_path = os.path.dirname(__file__)+'/recorded_materials/'+audio_path
+            write(save_path, self.fs, audio_data)
+            print(f'audio saved at: {save_path}')
+            
+            # # Call transcription function
+            # txt_path = audio_path.replace('.wav', '.txt')
+            # transcribe_audio(audio_path, txt_path)
+            
+            # # Load result to text box
+            # with open(txt_path, 'r', encoding='utf-8') as f:
+            #     self.annotation_edit.setText(f.read())
 
-        audio_path_message = f"audio is saved at: {audio_path}"
-        wrapped_message = textwrap.fill(audio_path_message, width=28)  
-        self.ai_response.setText(wrapped_message)
-        
+            audio_path_message = f"audio is saved at: {audio_path}"
+            wrapped_message = textwrap.fill(audio_path_message, width=28)  
+            self.ai_response.setText(wrapped_message)
+        except Exception as e:
+            error_message = f"Error saving audio: {str(e)}"
+            print(error_message)
+            self.ai_response.setText(error_message)
 
     def _handle_ai_command(self):
         """Handle AI commands"""
