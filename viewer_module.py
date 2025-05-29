@@ -328,12 +328,6 @@ class ViewerUI:
         self.image_layer = self.viewer.add_image(self.image_array, **self.metadata, visible=False)
         self.image_layer.editable = False  
         self._setup_ortho_views()
-        self.points_layer = self.viewer.add_points(
-            name='3d corresponding points',
-            ndim=3,
-            size=3,
-            face_color='red'
-        )
 
     def _setup_ortho_views(self):
         """Initialize orthogonal views"""
@@ -416,22 +410,6 @@ class ViewerUI:
         # self.coronal_layer.refresh()
         self.sagittal_layer.refresh()
 
-        # according to the current slice update the visibility of the points
-        if len(self.points_layer.data) > 0:
-            current_z, current_y, current_x = self.viewer.dims.current_step
-            visible = []
-            for point in self.points_layer.data:
-                p_z = int(round(point[0]))
-                p_y = int(round(point[1]))
-                p_x = int(round(point[2]))
-                # check if on any of the current slice planes
-                if p_z == current_z or p_y == current_y or p_x == current_x:
-                    visible.append(True)
-                else:
-                    visible.append(False)
-            self.points_layer.visible = visible
-            self.points_layer.refresh()  # refresh the point layer display
-        
         current_z, current_y, current_x = self.viewer.dims.current_step
         
         line_data_axial = [
@@ -551,9 +529,6 @@ class ViewerUI:
 
     def get_viewer(self):
         return self.viewer
-
-    def get_points_layer(self):
-        return self.points_layer
     
     def get_status_label(self):
         return self.status_label

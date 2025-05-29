@@ -27,6 +27,7 @@ class ScreenRecorder:
         self.text_queue = queue.Queue()  # (thread-safe text queue)
         self.font = ImageFont.truetype(FONT_PATH, FONT_SIZE)
         self.lock = threading.Lock()
+        self.text_color = 255
 
         # add dynamic path for the image and video
         self.image_name = None
@@ -76,7 +77,7 @@ class ScreenRecorder:
             if current_time < annotation["expire_time"]:
                 draw.text((0, 0), 
                          f"{annotation['text']} ({annotation['timestamp'].strftime('%H:%M:%S')})",
-                         fill=TEXT_COLOR, 
+                         fill=self.text_color, 
                          font=self.font)
                 temp_queue.put(annotation)
         

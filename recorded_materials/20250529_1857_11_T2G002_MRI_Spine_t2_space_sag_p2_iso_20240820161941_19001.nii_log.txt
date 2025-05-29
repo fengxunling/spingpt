@@ -1,0 +1,19 @@
+
+[Video Recording Started] 2025-05-29 18:57:11.839
+[Annotation] 2025-05-29 18:57:16.130
+Content: [Point Annotation] 18:57:16
+Point coordinate (data): (x=39.846062281263215, y=10.855995892213302, z=-181.98881622902962)
+Current slice index: (z=320, y=504, x=328)
+------------------------
+
+------------------------
+[Annotation] 2025-05-29 18:57:24.648
+Content: [Point Annotation - points_layer_1748537840] 18:57:24
+Point coordinate (data): (x=309.10609303356574, y=191.1352552941657, z=-181.98881622902962)
+Current slice index: (z=320, y=504, x=328)
+------------------------
+
+------------------------
+[Video Recording Ended] 2025-05-29 18:57:37.748
+[Duration] 25.91 seconds
+

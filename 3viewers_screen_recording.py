@@ -44,6 +44,7 @@ RECORD_PATH = os.path.dirname(__file__)+'/recorded_materials/'
 
 # Initialize recorder
 recorder = ScreenRecorder(FONT_PATH=FONT_PATH, FONT_SIZE=FONT_SIZE, RECORD_PATH=RECORD_PATH, FPS=FPS, MAX_TEXT_DURATION=MAX_TEXT_DURATION)
+recorder.text_color = TEXT_COLOR
 
 # set the file path
 IMAGE_PATH = os.path.dirname(__file__)+'/data/'
@@ -99,18 +100,6 @@ def main():
                     recorder=recorder, RECORD_PATH=RECORD_PATH)
     viewer = viewer3d.get_viewer()
 
-    # # 在初始化时添加(0, 0)点进行测试
-    # image_layer = viewer.layers['Sagittal']
-    # origin_point = np.array([[0, 0]]) 
-    # origin_physical = origin_point * image_layer.scale + image_layer.translate
-    # viewer.add_points(
-    #     origin_physical,
-    #     name='Origin Point',
-    #     size=2,
-    #     face_color='blue',
-    #     edge_color='black'
-    # )
-
     def calculate_base_scale(image_shape, screen_size):
         """Calculate base scaling ratio based on image dimensions and screen space"""
         screen_width = screen_size[0] // 2  
@@ -134,10 +123,9 @@ def main():
 
     def update_slices(event):
         viewer3d._update_slices(event)
-    def on_points_changed(event):
-        viewer3d._on_points_changed(event)
+        
     viewer = viewer3d.get_viewer()
-    points_layer = viewer3d.get_points_layer()
+    # points_layer = viewer3d.get_points_layer()
 
     QTimer.singleShot(50, lambda: [
         [tb.setVisible(False) for tb in viewer.window._qt_window.findChildren(QToolBar)],
@@ -158,49 +146,90 @@ def main():
     # Connect dimension updates
     viewer.dims.events.current_step.connect(update_slices)
 
-    # Add points layer and other existing logic
-    points_layer = viewer.add_points(
-        name='3d corresponding points',
-        ndim=3,
-        size=3,
-        face_color='red'
-    )
+    # # Add points layer and other existing logic
+    # points_layer = viewer.add_points(
+    #     name='3d corresponding points',
+    #     ndim=3,
+    #     size=3,
+    #     face_color='red'
+    # )
+
+    # points_layer = viewer3d.get_points_layer()
+    # # 初始化previous_point_count为当前点数
+    # previous_point_count = len(points_layer.data)
 
     # def on_points_changed(event):
-    #     nonlocal previous_length
+    #     nonlocal previous_point_count
+    #     current_points = event.source.data   # 所有点的坐标数组
+    #     current_count = len(current_points)
 
-    #     """Points layer change handler"""
-    #     current_data = points_layer.data
-    #     current_length = len(current_data)
-        
-    #     if current_length > previous_length:
-    #         new_points = current_data[previous_length:current_length]
-    #         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
-            
-    #         current_step = viewer.dims.current_step
-    #         print(f'current_step={current_step}')
-    #         image_layer = viewer.layers['Sagittal']
-    #         image_bias = np.array([0, 0]) * image_layer.scale + image_layer.translate
-            
-            # log_info = []
-            # for pt in new_points:
-            #     pt_modified = np.array(pt)
-            #     pt_modified[1] = current_step[1]
-            #     physical_coord = pt_modified - np.array([image_bias[1], 0, image_bias[0]])
-            #     log_entry = (
-            #         f"[Point Annotation] {timestamp}\n"
-            #         f"Spatial coordinates: {np.round(physical_coord, 0)}\n"
-            #         f"Current slice: [dim0:{current_step[0]}, dim1:{current_step[1]}, dim2:{current_step[2]}]\n"
-            #         "------------------------\n"
-            #     )
-            #     log_info.append(log_entry)
-            
-            # if recorder.is_recording: 
-            #     recorder.add_annotation(log_info)
-            
-    #         previous_length = current_length
+    #     # 如果当前点数大于之前存储的点数，说明新增了点
+    #     if current_count > previous_point_count:
+    #         # 新增的点就是current_points[previous_point_count: current_count]
+    #         new_points = current_points[previous_point_count: current_count]
+    #         for point in new_points:
+    #             # 对每个新增的点，记录日志
+    #             current_z, current_y, current_x = viewer.dims.current_step
+    #             timestamp_log = datetime.now().strftime('%H:%M:%S')
+    #             # 点坐标顺序：point[0]是z, point[1]是y, point[2]是x -> 转换为x, y, z
+    #             x, y, z = point[2], point[1], point[0]
+    #             log_text = f"[Point Annotation] {timestamp_log}\n"
+    #             log_text += f"Point coordinate (data): (x={x}, y={y}, z={z})\n"
+    #             log_text += f"Current slice index: (z={current_z}, y={current_y}, x={current_x})\n"
+    #             log_text += "------------------------\n"
+    #             if recorder.is_recording:
+    #                 recorder.add_annotation(log_text)
+    #         # 更新previous_point_count
+    #         previous_point_count = current_count
 
+    #     # 如果点数减少，则更新previous_point_count，但不记录
+    #     else:
+    #         previous_point_count = current_count
+
+    # # 绑定事件
     # points_layer.events.data.connect(on_points_changed)
+
+    @viewer.bind_key('P')
+    def add_new_points_layer(viewer):
+        """Create a new points layer with a unique name"""
+        import time
+        layer_name = f'points_layer_{int(time.time())}'
+        
+        # Get current image layer for scale and translate properties
+        image_layer = viewer.layers['Sagittal']
+        
+        # Create new points layer with the same scale and translate as the image
+        new_points_layer = viewer.add_points(
+            name=layer_name,
+            ndim=3,
+            size=3,
+            face_color='red',
+            scale=image_layer.scale,
+            translate=image_layer.translate
+        )
+        
+        # Add points change event handler for the new layer
+        def on_points_changed(event):
+            current_points = event.source.data
+            if len(current_points) > 0:
+                # Get the most recently added point
+                new_point = current_points[-1]
+                current_z, current_y, current_x = viewer.dims.current_step
+                timestamp_log = datetime.now().strftime('%H:%M:%S')
+                
+                # Convert point coordinates (z,y,x format to x,y,z format)
+                x, y, z = new_point[2], new_point[1], new_point[0]
+                log_text = f"[Point Annotation - {layer_name}] {timestamp_log}\n"
+                log_text += f"Point coordinate (data): (x={x}, y={y}, z={z})\n"
+                log_text += f"Current slice index: (z={current_z}, y={current_y}, x={current_x})\n"
+                log_text += "------------------------\n"
+                
+                if recorder.is_recording:
+                    recorder.add_annotation(log_text)
+        
+        # Connect the event handler
+        new_points_layer.events.data.connect(on_points_changed)
+        print(f"Created new points layer: {layer_name}")
 
     def on_shape_added(event):
         print(f'====on_shape_added')
@@ -419,8 +448,6 @@ def main():
             print("Opening 3D view...")
         except Exception as e:
             print(f"Failed to launch 3D view: {str(e)}")
-
-
 
     # automatically stop recording when the window is closed
     def on_close(event):
