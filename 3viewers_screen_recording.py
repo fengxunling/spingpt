@@ -208,6 +208,9 @@ def main():
             translate=image_layer.translate
         )
         
+        # Make the new layer the active layer
+        viewer.layers.selection.active = new_points_layer
+        
         # Add points change event handler for the new layer
         def on_points_changed(event):
             current_points = event.source.data
@@ -230,6 +233,10 @@ def main():
         # Connect the event handler
         new_points_layer.events.data.connect(on_points_changed)
         print(f"Created new points layer: {layer_name}")
+        
+        # Update status label to show current active layer
+        viewer3d.get_status_label().setText(f"Active Layer: {layer_name}")
+        viewer3d.get_status_label().setStyleSheet("color: blue;")
 
     def on_shape_added(event):
         print(f'====on_shape_added')
