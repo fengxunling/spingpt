@@ -25,6 +25,7 @@ from recorder import ScreenRecorder
 from viewer_module import ViewerUI
 from qtpy.QtWidgets import QListWidgetItem 
 
+
 import sounddevice as sd 
 from scipy.io.wavfile import write as write_wav
 
