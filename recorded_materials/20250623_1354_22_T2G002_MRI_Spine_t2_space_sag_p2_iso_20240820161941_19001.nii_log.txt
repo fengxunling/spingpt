@@ -1,0 +1,33 @@
+
+[Video Recording Started] 2025-06-23 13:54:22.545
+[Annotation] 2025-06-23 13:55:34.876
+Content: [Rectangle 0 Annotation] 13:54:53
+Physical coordinates: [[450.97, 244.16], [450.97, 322.79], [512.29, 322.79], [512.29, 244.16]]
+Note: Audio: 
+(x=328, y=504, z=320)
+------------------------
+[Rectangle 1 Annotation] 13:55:00
+Physical coordinates: [[466.84, 256.42], [466.84, 340.83], [529.6, 340.83], [529.6, 256.42]]
+Note: Audio: 
+(x=328, y=504, z=320)
+------------------------
+[Rectangle 2 Annotation] 13:55:07
+Physical coordinates: [[502.19, 298.26], [502.19, 381.95], [569.28, 381.95], [569.28, 298.26]]
+Note: Audio: 
+(x=328, y=504, z=320)
+------------------------
+[Rectangle 3 Annotation] 13:55:17
+Physical coordinates: [[356.47, 291.77], [356.47, 347.32], [434.38, 347.32], [434.38, 291.77]]
+Note: Audio: 
+(x=21, y=504, z=320)
+------------------------
+[Rectangle 4 Annotation] 13:55:30
+Physical coordinates: [[225.17, 254.98], [225.17, 309.81], [271.34, 309.81], [271.34, 254.98]]
+Note: Audio: 
+(x=51, y=504, z=160)
+------------------------
+
+------------------------
+[Video Recording Ended] 2025-06-23 13:55:34.877
+[Duration] 72.33 seconds
+

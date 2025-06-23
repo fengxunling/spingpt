@@ -41,8 +41,8 @@ class ViewerUI:
 
     def _init_ui(self, filepath):
         """Initialize viewer interface components"""
-        # self.viewer.window._qt_window.showFullScreen()
-        self.viewer.window._qt_window.resize(1800, 900)
+        self.viewer.window._qt_window.showFullScreen()
+        # self.viewer.window._qt_window.resize(1800, 900)
         self._create_sliders()
         self._setup_toolbar(filepath)
         print(f'filepath={filepath}')
@@ -78,7 +78,7 @@ class ViewerUI:
         self.record_btn = QPushButton("start recording")
         self.record_btn.setObjectName("audio_record_btn")  # add object name
         self.record_btn.clicked.connect(self.toggle_audio_recording)
-        self.record_btn.setMinimumWidth(120)
+        self.record_btn.setMinimumWidth(50)
         audio_layout.addStretch()
         audio_layout.addWidget(self.record_btn)
         audio_layout.addStretch()
@@ -122,6 +122,9 @@ class ViewerUI:
 
         # Add metadata storage
         self.rect_metadata = {}  # {rect_id: {"text": "", "audio": ""}}
+
+        self.side_panel.setMinimumWidth(220)
+        self.side_panel.setMaximumWidth(220)
 
 
     def apply_layout_settings(self):
